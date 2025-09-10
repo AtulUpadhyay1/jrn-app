@@ -149,10 +149,10 @@ function App() {
     <main className="App  relative">
       <Routes>
         <Route path="/" element={<AuthLayout />}>
-          <Route path="/" element={<Login3 />} />
+          <Route path="/" element={<Login />} />
           <Route path="/login2" element={<Login2 />} />
           <Route path="/login3" element={<Login3 />} />
-          <Route path="/register" element={<Register3 />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/register2" element={<Register2 />} />
           <Route path="/register3" element={<Register3 />} />
           <Route path="/forgot-password" element={<ForgotPass3 />} />
