@@ -16,37 +16,6 @@ import Layout from "./layout/Layout";
 import AuthLayout from "./layout/AuthLayout";
 import OnboardingLayout from "./layout/OnboardingLayout";
 
-// map page
-const MapPage = lazy(() => import("./pages/map"));
-
-// table pages
-const BasicTablePage = lazy(() => import("./pages/table/table-basic"));
-const TanstackTable = lazy(() => import("./pages/table/react-table"));
-
-// utility pages
-const InvoicePage = lazy(() => import("./pages/utility/invoice"));
-const InvoiceAddPage = lazy(() => import("./pages/utility/invoice-add"));
-const InvoicePreviewPage = lazy(() => import("./pages/utility/invoice-preview"));
-const InvoiceEditPage = lazy(() => import("./pages/utility/invoice-edit"));
-const PricingPage = lazy(() => import("./pages/utility/pricing"));
-const BlankPage = lazy(() => import("./pages/utility/blank-page"));
-const ComingSoonPage = lazy(() => import("./pages/utility/coming-soon"));
-const UnderConstructionPage = lazy(() =>
-  import("./pages/utility/under-construction")
-);
-const BlogPage = lazy(() => import("./pages/utility/blog"));
-const BlogDetailsPage = lazy(() => import("./pages/utility/blog/blog-details"));
-const FaqPage = lazy(() => import("./pages/utility/faq"));
-const Settings = lazy(() => import("./pages/utility/settings"));
-const Profile = lazy(() => import("./pages/utility/profile"));
-const IconPage = lazy(() => import("./pages/icons"));
-const NotificationPage = lazy(() => import("./pages/utility/notifications"));
-const ChangelogPage = lazy(() => import("./pages/changelog"));
-
-// widget pages
-const BasicWidget = lazy(() => import("./pages/widget/basic-widget"));
-const StatisticWidget = lazy(() => import("./pages/widget/statistic-widget"));
-
 // app page
 const TodoPage = lazy(() => import("./pages/app/todo"));
 const EmailPage = lazy(() => import("./pages/app/email"));
@@ -88,7 +57,6 @@ import EditProduct from "./pages/ecommerce/edit-product";
 import Customers from "./pages/ecommerce/customers";
 import Sellers from "./pages/ecommerce/sellers";
 import AddProduct from "./pages/ecommerce/add-product";
-import InvoiceEPage from "./pages/ecommerce/invoice-ecompage";
 
 
 const ProfileSetup = lazy(() => import("./pages/profile-setup"));
@@ -118,29 +86,8 @@ function App() {
           <Route path="project-details" element={<ProjectDetailsPage />} />
           <Route path="kanban" element={<KanbanPage />} />
           <Route path="calender" element={<CalenderPage />} />
-          
 
-          {/* Map page */}
-          <Route path="map" element={<MapPage />} />
-          <Route path="table-basic" element={<BasicTablePage />} />
-          <Route path="react-table" element={<TanstackTable />} />
-          <Route path="invoice" element={<InvoicePage />} />
-          <Route path="invoice-add" element={<InvoiceAddPage />} />
-          <Route path="invoice-preview" element={<InvoicePreviewPage />} />
-          <Route path="invoice-edit" element={<InvoiceEditPage />} />
-          <Route path="pricing" element={<PricingPage />} />
-          <Route path="blank-page" element={<BlankPage />} />
-          <Route path="blog" element={<BlogPage />} />
-          <Route path="blog-details" element={<BlogDetailsPage />} />
-          <Route path="faq" element={<FaqPage />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="basic" element={<BasicWidget />} />
-          <Route path="statistic" element={<StatisticWidget />} />
-          <Route path="icons" element={<IconPage />} />
-          <Route path="notifications" element={<NotificationPage />} />
-          <Route path="changelog" element={<ChangelogPage />} />
-
+          {/* Ecommerce Pages */}
           <Route path="products" element={<EcommercePage />} />
           <Route path="products/:id" element={<ProductDetails />} />
           <Route path="cart" element={<Cart />} />
@@ -152,7 +99,6 @@ function App() {
           <Route path="edit-product" element={<EditProduct />} />
           <Route path="customers" element={<Customers />} />
           <Route path="sellers" element={<Sellers />} />
-          <Route path="invoice-ecommerce" element={<InvoiceEPage />} />
           
           <Route path="profile-setup" element={<ProfileSetup />} />
           <Route path="multistep-form-demo" element={<MultiStepFormDemo />} />
@@ -203,22 +149,6 @@ function App() {
           element={
             <Suspense fallback={<Loading />}>
               <Error />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/coming-soon"
-          element={
-            <Suspense fallback={<Loading />}>
-              <ComingSoonPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/under-construction"
-          element={
-            <Suspense fallback={<Loading />}>
-              <UnderConstructionPage />
             </Suspense>
           }
         />
