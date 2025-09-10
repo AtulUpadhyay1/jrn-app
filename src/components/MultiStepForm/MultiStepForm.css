@@ -1,0 +1,130 @@
+/* Multi-Step Form Styles */
+.multi-step-form {
+  @apply min-h-screen bg-slate-50 dark:bg-slate-900;
+}
+
+.step-nav-item {
+  @apply flex flex-col items-center min-w-0 transition-all duration-300;
+}
+
+.step-nav-item.step-active .step-indicator {
+  @apply bg-primary-500 text-white shadow-lg transform scale-110;
+}
+
+.step-nav-item.step-completed .step-indicator {
+  @apply bg-success-500 text-white;
+}
+
+.step-nav-item.step-inactive .step-indicator {
+  @apply bg-gray-200 text-gray-600 dark:bg-slate-600 dark:text-slate-300;
+}
+
+.step-nav-item.step-active .step-nav-text {
+  @apply text-primary-600 dark:text-primary-400 font-medium;
+}
+
+.step-nav-item.step-completed .step-nav-text {
+  @apply text-success-600 dark:text-success-400;
+}
+
+.step-nav-item.step-inactive .step-nav-text {
+  @apply text-gray-500 dark:text-slate-400;
+}
+
+.step-line {
+  @apply h-0.5 transition-all duration-300;
+}
+
+.step-line.completed {
+  @apply bg-success-500;
+}
+
+.step-line.active {
+  @apply bg-gradient-to-r from-primary-500 to-gray-200 dark:to-slate-600;
+}
+
+.step-line.inactive {
+  @apply bg-gray-200 dark:bg-slate-600;
+}
+
+/* Form animations */
+.step-content {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.step-content.entering {
+  @apply transform translate-x-4 opacity-0;
+}
+
+.step-content.entered {
+  @apply transform translate-x-0 opacity-100;
+}
+
+.step-content.exiting {
+  @apply transform -translate-x-4 opacity-0;
+}
+
+/* Video recording styles */
+.video-recording-indicator {
+  @apply animate-pulse;
+}
+
+/* Upload area styles */
+.upload-area {
+  @apply transition-colors duration-200;
+}
+
+.upload-area.drag-active {
+  @apply border-primary-500 bg-primary-50 dark:bg-primary-900/20;
+}
+
+.upload-area:hover {
+  @apply border-primary-400;
+}
+
+/* Progress bar animation */
+.progress-bar {
+  @apply transition-all duration-500 ease-out;
+}
+
+/* Social platform icons */
+.social-platform-icon {
+  @apply transition-colors duration-200;
+}
+
+/* Subscription plan cards */
+.subscription-card {
+  @apply transition-all duration-200;
+}
+
+.subscription-card.selected {
+  @apply transform scale-105 shadow-lg;
+}
+
+.subscription-card:hover {
+  @apply shadow-md transform scale-102;
+}
+
+/* Summary section animations */
+.summary-section {
+  @apply transition-all duration-300;
+}
+
+.summary-section:hover {
+  @apply transform translateY(-1px) shadow-md;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  .step-nav-item .step-indicator {
+    @apply w-8 h-8 text-sm;
+  }
+  
+  .step-nav-item .step-nav-text {
+    @apply text-xs px-1;
+  }
+  
+  .step-line {
+    @apply mx-1;
+  }
+}
