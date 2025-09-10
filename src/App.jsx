@@ -17,7 +17,6 @@ import AuthLayout from "./layout/AuthLayout";
 import OnboardingLayout from "./layout/OnboardingLayout";
 
 // app page
-const TodoPage = lazy(() => import("./pages/app/todo"));
 const EmailPage = lazy(() => import("./pages/app/email"));
 const ChatPage = lazy(() => import("./pages/app/chat"));
 const ProjectPostPage = lazy(() => import("./pages/app/projects"));
@@ -78,7 +77,7 @@ function App() {
           <Route path="project" element={<ProjectPage />} />
           <Route path="banking" element={<BankingPage />} />
           {/* App pages */}
-          <Route path="todo" element={<TodoPage />} />
+          
           <Route path="email" element={<EmailPage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="projects" element={<ProjectPostPage />} />
