@@ -33,9 +33,6 @@ const Assessment = lazy(() => import("./pages/assessment"));
 const ResumePage = lazy(() => import("./pages/resume/ResumePage"));
 const JobCopilotConfig = lazy(() => import("./pages/matchmaking/engine"));
 
-const CalenderPage = lazy(() => import("./pages/app/calendar"));
-
-
 const EcommercePage = lazy(() => import("./pages/ecommerce"));
 
 import Loading from "@/components/Loading";
@@ -69,9 +66,6 @@ function App() {
           <Route path="crm" element={<CrmPage />} />
           <Route path="project" element={<ProjectPage />} />
           <Route path="banking" element={<BankingPage />} />
-          {/* App pages */}
-          
-          <Route path="calender" element={<CalenderPage />} />
 
           {/* Ecommerce Pages */}
           <Route path="products" element={<EcommercePage />} />
