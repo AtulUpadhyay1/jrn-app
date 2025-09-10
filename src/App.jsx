@@ -2,11 +2,6 @@ import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 const Dashboard = lazy(() => import("./pages/dashboard"));
-const Ecommerce = lazy(() => import("./pages/dashboard/ecommerce"));
-const CrmPage = lazy(() => import("./pages/dashboard/crm"));
-const ProjectPage = lazy(() => import("./pages/dashboard/project"));
-const BankingPage = lazy(() => import("./pages/dashboard/banking"));
-
 const Login = lazy(() => import("./pages/auth/login"));
 const Register = lazy(() => import("./pages/auth/register"));
 const ForgotPass = lazy(() => import("./pages/auth/forgot-password"));
@@ -15,8 +10,6 @@ const Error = lazy(() => import("./pages/404"));
 import Layout from "./layout/Layout";
 import AuthLayout from "./layout/AuthLayout";
 import OnboardingLayout from "./layout/OnboardingLayout";
-
-// app page
 
 // JRN Pages
 const RoleplayPage = lazy(() => import("./pages/roleplay"));
@@ -50,12 +43,6 @@ function App() {
         </Route>
         <Route path="/*" element={<Layout />}>
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="ecommerce" element={<Ecommerce />} />
-          <Route path="crm" element={<CrmPage />} />
-          <Route path="project" element={<ProjectPage />} />
-          <Route path="banking" element={<BankingPage />} />
-
-          {/* Other Pages */}
           
           <Route path="profile-setup" element={<ProfileSetup />} />
           <Route path="multistep-form-demo" element={<MultiStepFormDemo />} />
