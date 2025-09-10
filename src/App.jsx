@@ -1,8 +1,6 @@
 import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
-// home pages  & dashboard
-//import Dashboard from "./pages/dashboard";
 const Dashboard = lazy(() => import("./pages/dashboard"));
 const Ecommerce = lazy(() => import("./pages/dashboard/ecommerce"));
 const CrmPage = lazy(() => import("./pages/dashboard/crm"));
@@ -155,7 +153,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/register2" element={<Register2 />} />
           <Route path="/register3" element={<Register3 />} />
-          <Route path="/forgot-password" element={<ForgotPass3 />} />
+          <Route path="/forgot-password" element={<ForgotPass />} />
           <Route path="/forgot-password2" element={<ForgotPass2 />} />
           <Route path="/forgot-password3" element={<ForgotPass3 />} />
           <Route path="/lock-screen" element={<LockScreen />} />

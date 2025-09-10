@@ -6,7 +6,7 @@ import useDarkMode from "@/hooks/useDarkMode";
 import LogoWhite from "@/assets/images/logo/logo.png";
 import Logo from "@/assets/images/logo/logo.svg";
 import bgImage from "@/assets/images/all-img/login-bg.png";
-const ForgotPass = () => {
+const forgotPass = () => {
   const [isDark] = useDarkMode();
   return (
     <div
@@ -65,4 +65,4 @@ const ForgotPass = () => {
   );
 };
 
-export default ForgotPass;
+export default forgotPass;
