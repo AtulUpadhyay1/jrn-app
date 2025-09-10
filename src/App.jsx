@@ -17,12 +17,6 @@ import AuthLayout from "./layout/AuthLayout";
 import OnboardingLayout from "./layout/OnboardingLayout";
 
 // app page
-const EmailPage = lazy(() => import("./pages/app/email"));
-const ChatPage = lazy(() => import("./pages/app/chat"));
-const ProjectPostPage = lazy(() => import("./pages/app/projects"));
-const ProjectDetailsPage = lazy(() =>
-  import("./pages/app/projects/project-details")
-);
 
 // JRN Pages
 const RoleplayPage = lazy(() => import("./pages/roleplay"));
@@ -39,7 +33,6 @@ const Assessment = lazy(() => import("./pages/assessment"));
 const ResumePage = lazy(() => import("./pages/resume/ResumePage"));
 const JobCopilotConfig = lazy(() => import("./pages/matchmaking/engine"));
 
-const KanbanPage = lazy(() => import("./pages/app/kanban"));
 const CalenderPage = lazy(() => import("./pages/app/calendar"));
 
 
@@ -78,12 +71,6 @@ function App() {
           <Route path="banking" element={<BankingPage />} />
           {/* App pages */}
           
-          <Route path="email" element={<EmailPage />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="projects" element={<ProjectPostPage />} />
-          <Route path={"projects/:id"} element={<ProjectDetailsPage />} />
-          <Route path="project-details" element={<ProjectDetailsPage />} />
-          <Route path="kanban" element={<KanbanPage />} />
           <Route path="calender" element={<CalenderPage />} />
 
           {/* Ecommerce Pages */}
