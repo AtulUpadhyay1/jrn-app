@@ -33,19 +33,7 @@ const Assessment = lazy(() => import("./pages/assessment"));
 const ResumePage = lazy(() => import("./pages/resume/ResumePage"));
 const JobCopilotConfig = lazy(() => import("./pages/matchmaking/engine"));
 
-const EcommercePage = lazy(() => import("./pages/ecommerce"));
-
 import Loading from "@/components/Loading";
-import { ProductDetails } from "./pages/ecommerce/productDetails";
-import Cart from "./pages/ecommerce/cart";
-import Wishlist from "./pages/ecommerce/wish-list";
-import Orders from "./pages/ecommerce/orders";
-import OrderDetails from "./pages/ecommerce/orderDetails";
-import Checkout from "./pages/ecommerce/checkout";
-import EditProduct from "./pages/ecommerce/edit-product";
-import Customers from "./pages/ecommerce/customers";
-import Sellers from "./pages/ecommerce/sellers";
-import AddProduct from "./pages/ecommerce/add-product";
 
 
 const ProfileSetup = lazy(() => import("./pages/profile-setup"));
@@ -67,18 +55,7 @@ function App() {
           <Route path="project" element={<ProjectPage />} />
           <Route path="banking" element={<BankingPage />} />
 
-          {/* Ecommerce Pages */}
-          <Route path="products" element={<EcommercePage />} />
-          <Route path="products/:id" element={<ProductDetails />} />
-          <Route path="cart" element={<Cart />} />
-          <Route path="wishlist" element={<Wishlist />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="order-details" element={<OrderDetails />} />
-          <Route path="checkout" element={<Checkout />} />
-          <Route path="add-product" element={<AddProduct />} />
-          <Route path="edit-product" element={<EditProduct />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="sellers" element={<Sellers />} />
+          {/* Other Pages */}
           
           <Route path="profile-setup" element={<ProfileSetup />} />
           <Route path="multistep-form-demo" element={<MultiStepFormDemo />} />
