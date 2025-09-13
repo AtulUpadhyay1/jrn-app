@@ -8,7 +8,6 @@ import useContentWidth from "@/hooks/useContentWidth";
 import useMenulayout from "@/hooks/useMenulayout";
 import useMenuHidden from "@/hooks/useMenuHidden";
 import Footer from "@/components/partials/footer";
-import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import MobileMenu from "@/components/partials/sidebar/MobileMenu";
 import useMobileMenu from "@/hooks/useMobileMenu";
 import MobileFooter from "@/components/partials/footer/MobileFooter";
@@ -110,7 +109,6 @@ const AdminLayout = () => {
                   duration: 0.5,
                 }}
               >
-                <Breadcrumbs />
                 <Outlet />
               </motion.div>
             </Suspense>

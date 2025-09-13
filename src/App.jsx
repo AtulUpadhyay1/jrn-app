@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
 
 const Dashboard = lazy(() => import("./pages/dashboard"));
 const Login = lazy(() => import("./pages/auth/login"));
@@ -10,6 +11,8 @@ const Error = lazy(() => import("./pages/404"));
 // Admin Components
 const AdminLogin = lazy(() => import("./pages/admin/login"));
 const AdminDashboard = lazy(() => import("./pages/admin/dashboard"));
+const RolePlayCategory = lazy(() => import("./pages/admin/role-play/category"));
+const RolePlayUseCase = lazy(() => import("./pages/admin/role-play/use-cases"));
 
 import Layout from "./layout/Layout";
 import AuthLayout from "./layout/AuthLayout";
@@ -55,6 +58,8 @@ function App() {
           </AdminProtectedRoute>
         }>
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="role-play-categories" element={<RolePlayCategory />} />
+          <Route path="role-play-use-cases" element={<RolePlayUseCase />} />
           <Route path="" element={<Navigate to="/admin/dashboard" />} />
         </Route>
 
@@ -123,6 +128,20 @@ function App() {
           }
         />
       </Routes>
+      
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </main>
   );
 }

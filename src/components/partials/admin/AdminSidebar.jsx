@@ -17,7 +17,7 @@ const adminMenuItems = [
   {
     title: "Dashboard",
     isHide: true,
-    icon: "heroicons-outline:home",
+    icon: "heroicons-outline:squares-2x2",
     link: "/admin/dashboard",
   },
   {
@@ -27,30 +27,24 @@ const adminMenuItems = [
   {
     title: "All Users",
     isHide: true,
-    icon: "heroicons-outline:users",
+    icon: "heroicons-outline:user-group",
     link: "/admin/users",
   },
   {
-    title: "User Analytics",
-    isHide: true,
-    icon: "heroicons-outline:chart-bar",
-    link: "/admin/analytics",
-  },
-  {
     isHeadr: true,
-    title: "Content Management",
+    title: "Role Play",
   },
   {
-    title: "Posts & Content",
+    title: "Categories",
     isHide: true,
-    icon: "heroicons-outline:document-text",
-    link: "/admin/content",
+    icon: "heroicons-outline:folder",
+    link: "/admin/role-play-categories",
   },
   {
-    title: "Reports",
+    title: "Use Cases",
     isHide: true,
-    icon: "heroicons-outline:flag",
-    link: "/admin/reports",
+    icon: "heroicons-outline:clipboard-document-list",
+    link: "/admin/role-play-use-cases",
   },
   {
     isHeadr: true,
@@ -59,13 +53,13 @@ const adminMenuItems = [
   {
     title: "Settings",
     isHide: true,
-    icon: "heroicons-outline:cog-6-tooth",
+    icon: "heroicons-outline:adjustments-horizontal",
     link: "/admin/settings",
   },
   {
     title: "Logs",
     isHide: true,
-    icon: "heroicons-outline:document-text",
+    icon: "heroicons-outline:document-magnifying-glass",
     link: "/admin/logs",
   },
 ];
