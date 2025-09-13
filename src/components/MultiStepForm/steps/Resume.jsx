@@ -222,49 +222,6 @@ const Resume = ({ data, updateFormData, onNext, onPrevious, onStepSubmit, curren
             </div>
           </div>
 
-          {/* Professional Links */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
-              Professional Links
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Textinput
-                label="LinkedIn Profile URL"
-                type="url"
-                placeholder="https://linkedin.com/in/yourprofile"
-                name="linkedinUrl"
-                register={register}
-                error={errors.linkedinUrl}
-              />
-
-              <Textinput
-                label="Portfolio/Website URL"
-                type="url"
-                placeholder="https://yourportfolio.com"
-                name="portfolioUrl"
-                register={register}
-                error={errors.portfolioUrl}
-              />
-            </div>
-          </div>
-
-          {/* Additional Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
-              Additional Information
-            </h3>
-            
-            <Textarea
-              label="Cover Letter or Additional Notes (Optional)"
-              placeholder="Share any additional information about your background, achievements, or career highlights..."
-              name="additionalNotes"
-              register={register}
-              error={errors.additionalNotes}
-              rows={6}
-            />
-          </div>
-
           {/* Resume Tips */}
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
             <h4 className="text-lg font-medium text-blue-800 dark:text-blue-200 mb-3">
@@ -301,7 +258,7 @@ const Resume = ({ data, updateFormData, onNext, onPrevious, onStepSubmit, curren
           />
           <Button
             type="submit"
-            text={submitting ? "Saving..." : "Next: Video Introduction"}
+            text={submitting ? "Saving..." : "Next: Social"}
             className="btn-primary"
             disabled={submitting}
           />

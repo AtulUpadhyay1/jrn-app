@@ -13,8 +13,6 @@ const schema = yup.object().shape({
   personalWebsite: yup.string().url("Please enter a valid website URL"),
   instagram: yup.string().url("Please enter a valid Instagram URL"),
   youtube: yup.string().url("Please enter a valid YouTube URL"),
-  behance: yup.string().url("Please enter a valid Behance URL"),
-  dribbble: yup.string().url("Please enter a valid Dribbble URL"),
 });
 
 const socialPlatforms = [
@@ -65,23 +63,7 @@ const socialPlatforms = [
     icon: "heroicons:play",
     color: "text-red-600",
     description: "Video content and tutorials"
-  },
-  {
-    name: "behance",
-    label: "Behance",
-    placeholder: "https://behance.net/yourprofile",
-    icon: "heroicons:photo",
-    color: "text-blue-500",
-    description: "Creative portfolio"
-  },
-  {
-    name: "dribbble",
-    label: "Dribbble",
-    placeholder: "https://dribbble.com/yourusername",
-    icon: "heroicons:paint-brush",
-    color: "text-pink-500",
-    description: "Design showcase"
-  },
+  }
 ];
 
 const Social = ({ data, updateFormData, onNext, onPrevious, onStepSubmit, currentStep, totalSteps, submitting }) => {

@@ -5,7 +5,6 @@ import BasicProfile from "./steps/BasicProfile";
 import CareerPreferences from "./steps/CareerPreferences";
 import PurposePathways from "./steps/PurposePathways";
 import Resume from "./steps/Resume";
-import Video from "./steps/Video";
 import Social from "./steps/Social";
 import Subscriptions from "./steps/Subscriptions";
 import Summary from "./steps/Summary";
@@ -24,7 +23,6 @@ const MultiStepForm = () => {
     careerPreferences: {},
     purposePathways: {},
     resume: {},
-    video: {},
     social: {},
     subscriptions: {},
   });
@@ -34,10 +32,9 @@ const MultiStepForm = () => {
     { id: 2, title: "Career Preferences", component: CareerPreferences, url: "career-preferences" },
     { id: 3, title: "Purpose & Pathways", component: PurposePathways, url: "purpose-pathways" },
     { id: 4, title: "Resume", component: Resume, url: "resume" },
-    { id: 5, title: "Video", component: Video, url: "video" },
-    { id: 6, title: "Social", component: Social, url: "social" },
-    { id: 7, title: "Subscriptions", component: Subscriptions, url: "subscriptions" },
-    { id: 8, title: "Summary", component: Summary, url: "summary" },
+    { id: 5, title: "Social", component: Social, url: "social" },
+    { id: 6, title: "Subscriptions", component: Subscriptions, url: "subscriptions" },
+    { id: 7, title: "Summary", component: Summary, url: "summary" },
   ];
 
   // Get current step from URL
