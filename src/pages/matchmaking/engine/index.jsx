@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { use, useState } from 'react';
 import { Icon } from "@iconify/react/dist/iconify.js";
 
 const JobCopilotConfig = () => {
@@ -86,6 +86,8 @@ const JobCopilotConfig = () => {
   const prevStep = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
+
+  
 
   const RadioButton = ({ name, value, checked, onChange, children }) => (
     <label className="flex items-center space-x-2 cursor-pointer">

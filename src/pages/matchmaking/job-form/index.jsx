@@ -5,6 +5,8 @@ import Button from '@/components/ui/Button';
 import Textinput from '@/components/ui/Textinput';
 import Select from '@/components/ui/Select';
 import { Icon } from '@iconify/react';
+import { jobService } from '../../../services/jobEngine';
+import { toast } from 'react-toastify';
 
 const JobSearchForm = () => {
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,14 @@ const JobSearchForm = () => {
       console.log('Job search form data:', data);
       
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await jobService.createEngine(data);
+            if (result.success) {
+              toast.success("Job search engine created successfully!");
+                // Optionally reset the form or navigate to results page
+                reset();
+            } else {
+              console.error("Failed to fetch engine:", result.message);
+      }
       
       // Handle successful search (redirect to results, update state, etc.)
       console.log('Job search completed successfully');

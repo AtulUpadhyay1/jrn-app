@@ -2,64 +2,15 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Button from "@/components/ui/Button";
+import { useEffect } from "react";
+import { jobService } from "../../services/jobEngine";
+
 
 const Matchmaking = () => {
   const navigate = useNavigate();
   
   // Mock data for engines and jobs
   const [engines, setEngines] = useState([
-    {
-      id: 1,
-      title: "Senior Frontend Developer",
-      location: "San Francisco, CA",
-      contractType: "F", // Full-time
-      experienceLevel: "4", // Mid Senior Level
-      workType: "2", // Remote
-      publishedAt: "r604800", // Past week
-      created: "2024-08-20",
-      isActive: true,
-      matchCount: 28,
-      
-    },
-    {
-      id: 2,
-      title: "Full Stack Engineer",
-      location: "New York, NY",
-      contractType: "F", // Full-time
-      experienceLevel: "3", // Associate
-      workType: "3", // Hybrid
-      publishedAt: "r2592000", // Past month
-      created: "2024-08-18",
-      isActive: false,
-      matchCount: 15,
-      
-    },
-    {
-      id: 3,
-      title: "Product Manager",
-      location: "Austin, TX",
-      contractType: "F", // Full-time
-      experienceLevel: "4", // Mid Senior Level
-      workType: "1", // On Site
-      publishedAt: "r86400", // Past 24 hours
-      created: "2024-09-12",
-      isActive: true,
-      matchCount: 12,
-      
-    },
-    {
-      id: 4,
-      title: "DevOps Engineer",
-      location: "Seattle, WA",
-      contractType: "C", // Contract
-      experienceLevel: "3", // Associate
-      workType: "2", // Remote
-      publishedAt: "r604800", // Past week
-      created: "2024-09-10",
-      isActive: true,
-      matchCount: 22,
-      
-    },
     {
       id: 5,
       title: "UX Designer",
@@ -74,6 +25,35 @@ const Matchmaking = () => {
       
     }
   ]);
+
+  // fetch engine from api
+  useEffect(() => {
+    const fetchEngines = async () => {
+      const result = await jobService.fetchEngines();
+      if (result.success) {
+        setEngines(result.data);
+      } else {
+        console.error("Failed to fetch engines:", result.message);
+      }
+    };
+
+    fetchEngines();
+  }, []);
+
+
+  // change engines status from api
+  const changeEngineStatus = async (engineId, isActive) => {
+    const result = await jobService.updateEngineStatus(engineId, isActive);
+    if (result.success) {
+      setEngines((prevEngines) =>
+        prevEngines.map((engine) =>
+          engine.id === engineId ? { ...engine, isActive } : engine
+        )
+      );
+    } else {
+      console.error("Failed to update engine status:", result.message);
+    }
+  };
 
   const [jobs, setJobs] = useState([
     {
@@ -274,11 +254,14 @@ const Matchmaking = () => {
   const [filter, setFilter] = useState("all"); // all, applied, notInterested
 
   const handleEngineToggle = (engineId) => {
+    console.log("Toggling engine:", engineId);
     setEngines(engines.map(engine => 
       engine.id === engineId 
         ? { ...engine, isActive: !engine.isActive }
         : engine
     ));
+    const engine = engines.find(e => e.id === engineId);
+    changeEngineStatus(engineId, !engine.isActive);
   };
 
   const handleJobAction = (jobId, action) => {
