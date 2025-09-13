@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState } from "react";
 import SidebarLogo from "@/components/partials/sidebar/Logo";
-import Navmenu from "@/components/partials/sidebar/Navmenu";
 import SimpleBar from "simplebar-react";
 import useSidebar from "@/hooks/useSidebar";
 import useSemiDark from "@/hooks/useSemiDark";
 import useSkin from "@/hooks/useSkin";
 import { useSelector } from "react-redux";
+import { useLocation, NavLink } from "react-router-dom";
+import Icon from "@/components/ui/Icon";
 
 // Admin Menu Items
 const adminMenuItems = [
@@ -69,10 +70,44 @@ const adminMenuItems = [
   },
 ];
 
+const AdminNavigation = ({ menus }) => {
+  const location = useLocation();
+
+  return (
+    <ul>
+      {menus.map((item, i) => (
+        <li
+          key={i}
+          className={`single-sidebar-menu ${
+            item.link && location.pathname === item.link ? "menu-item-active" : ""
+          }`}
+        >
+          {/* Menu headers */}
+          {item.isHeadr && !item.child && (
+            <div className="menulabel">{item.title}</div>
+          )}
+          
+          {/* Single menu items */}
+          {!item.child && !item.isHeadr && (
+            <NavLink className="menu-link" to={item.link}>
+              <span className="menu-icon grow-0">
+                <Icon icon={item.icon} />
+              </span>
+              <div className="text-box grow">{item.title}</div>
+              {item.badge && <span className="menu-badge">{item.badge}</span>}
+            </NavLink>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 const AdminSidebar = () => {
   const scrollableNodeRef = useRef();
   const [scroll, setScroll] = useState(false);
   const { adminUser } = useSelector((state) => state.adminAuth);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -129,7 +164,7 @@ const AdminSidebar = () => {
           className="sidebar-menu px-4 h-[calc(100%-80px)]"
           scrollableNodeProps={{ ref: scrollableNodeRef }}
         >
-          <Navmenu menus={adminMenuItems} />
+          <AdminNavigation menus={adminMenuItems} />
 
           {/* Admin Info Section */}
           <div className="mb-8 mt-8">
