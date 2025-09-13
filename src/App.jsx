@@ -7,9 +7,15 @@ const Register = lazy(() => import("./pages/auth/register"));
 const ForgotPass = lazy(() => import("./pages/auth/forgot-password"));
 const Error = lazy(() => import("./pages/404"));
 
+// Admin Components
+const AdminLogin = lazy(() => import("./pages/admin/login"));
+const AdminDashboard = lazy(() => import("./pages/admin/dashboard"));
+
 import Layout from "./layout/Layout";
 import AuthLayout from "./layout/AuthLayout";
 import OnboardingLayout from "./layout/OnboardingLayout";
+import AdminLayout from "./layout/AdminLayout";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 // JRN Pages
 const RoleplayPage = lazy(() => import("./pages/roleplay"));
@@ -36,11 +42,29 @@ function App() {
   return (
     <main className="App  relative">
       <Routes>
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={
+          <Suspense fallback={<Loading />}>
+            <AdminLogin />
+          </Suspense>
+        } />
+        <Route path="/admin/*" element={
+          <AdminProtectedRoute>
+            <AdminLayout />
+          </AdminProtectedRoute>
+        }>
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="" element={<Navigate to="/admin/dashboard" />} />
+        </Route>
+
+        {/* Regular Auth Routes */}
         <Route path="/" element={<AuthLayout />}>
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPass />} />
         </Route>
+        
+        {/* Regular App Routes */}
         <Route path="/*" element={<Layout />}>
           <Route path="dashboard" element={<Dashboard />} />
           
