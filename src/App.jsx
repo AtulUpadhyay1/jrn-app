@@ -25,6 +25,7 @@ const ComparativeAnalysis = lazy(() => import("./pages/comprative"));
 const Assessment = lazy(() => import("./pages/assessment"));
 const ResumePage = lazy(() => import("./pages/resume/ResumePage"));
 const JobCopilotConfig = lazy(() => import("./pages/matchmaking/engine"));
+const JobSearchForm = lazy(() => import("./pages/matchmaking/job-form"));
 
 import Loading from "@/components/Loading";
 
@@ -61,6 +62,7 @@ function App() {
           <Route path="assessment" element={<Assessment />} />
           <Route path="resume-page" element={<ResumePage />} />
           <Route path="job-copilot-config" element={<JobCopilotConfig />} />
+          <Route path="job-search" element={<JobSearchForm />} />
 
           <Route path="resume-builder/*" element={<Resume />}>
           <Route path="" element={<Navigate to="/resume-builder/personal" />} />
