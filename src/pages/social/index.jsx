@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import linkedinService from "../../services/linkedinService";
 
 const Social = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -41,6 +42,55 @@ const Social = () => {
     { name: "Facebook", connected: false, followers: 0, icon: "mdi:facebook", color: "bg-blue-700" }
   ]);
 
+  const [linkedinSnapshot, setLinkedinSnapshot] = useState({
+    loading: false,
+    lastSnapshot: null,
+    error: null
+  });
+
+  const [notification, setNotification] = useState({
+    show: false,
+    type: 'success', // 'success' | 'error'
+    message: ''
+  });
+
+  const [userProfile, setUserProfile] = useState({
+    fullName: "John Doe",
+    headline: "Senior Full Stack Developer | React | Node.js | Cloud Solutions",
+    location: "San Francisco, CA",
+    industry: "Information Technology",
+    summary: "Passionate full-stack developer with 5+ years of experience building scalable web applications. Expertise in React, Node.js, and cloud technologies. Currently seeking new opportunities in fintech.",
+    skills: ["JavaScript", "React", "Node.js", "Python", "AWS", "Docker", "MongoDB", "PostgreSQL", "GraphQL", "TypeScript"],
+    experience: [
+      {
+        title: "Senior Full Stack Developer",
+        company: "Tech Innovators Inc",
+        duration: "2021 - Present",
+        description: "Led development of microservices architecture, improved system performance by 40%"
+      },
+      {
+        title: "Frontend Developer", 
+        company: "Digital Solutions LLC",
+        duration: "2019 - 2021",
+        description: "Built responsive web applications using React and TypeScript"
+      }
+    ],
+    education: [
+      {
+        degree: "Bachelor of Science in Computer Science",
+        institution: "University of California, Berkeley", 
+        year: "2019"
+      }
+    ]
+  });
+
+  const showNotification = (type, message) => {
+    setNotification({ show: true, type, message });
+    setTimeout(() => {
+      setNotification({ show: false, type: 'success', message: '' });
+    }, 5000);
+  };
+
   const handlePostAction = (postId, action) => {
     setPosts(posts.map(post => {
       if (post.id === postId) {
@@ -67,6 +117,100 @@ const Social = () => {
     ));
   };
 
+  const handleLinkedInSnapshot = async () => {
+    setLinkedinSnapshot({ ...linkedinSnapshot, loading: true, error: null });
+    
+    try {
+      // Comprehensive profile data for AI analysis
+      const profileData = {
+        // Basic Profile Info
+        userId: "user123", // Replace with actual user ID from auth context
+        fullName: userProfile.fullName,
+        headline: userProfile.headline,
+        location: userProfile.location,
+        industry: userProfile.industry,
+        
+        // Profile Content
+        summary: userProfile.summary,
+        
+        // Experience Data
+        experience: userProfile.experience,
+        
+        // Education
+        education: userProfile.education,
+        
+        // Skills
+        skills: userProfile.skills,
+        
+        // Current Metrics
+        currentStats: {
+          connections: socialStats.connections,
+          profileViews: socialStats.profileViews,
+          postReach: socialStats.postReach,
+          engagementRate: socialStats.engagementRate
+        },
+        
+        // Recent Activity
+        recentPosts: posts.map(post => ({
+          content: post.content,
+          engagement: post.likes + post.comments + post.shares,
+          timestamp: post.timestamp
+        })),
+        
+        // Analysis Preferences
+        analysisOptions: {
+          includeConnections: true,
+          includeExperience: true,
+          includeEducation: true,
+          includeSkills: true,
+          includeContentAnalysis: true,
+          optimizationGoals: ["increase_visibility", "improve_engagement", "career_advancement"]
+        },
+        
+        // Metadata
+        timestamp: new Date().toISOString(),
+        profileCompleteness: 85, // percentage
+        lastUpdated: new Date().toISOString()
+      };
+
+      console.log("📤 Sending LinkedIn Profile Data to AI:", profileData);
+
+      const result = await linkedinService.createProfileSnapshot(profileData);
+      
+      if (result.success) {
+        setLinkedinSnapshot({
+          loading: false,
+          lastSnapshot: result.data,
+          error: null
+        });
+        
+        showNotification('success', 'LinkedIn profile snapshot created successfully!');
+        
+        // Optionally update social stats based on snapshot results
+        if (result.data.profileViews) {
+          setSocialStats(prev => ({
+            ...prev,
+            profileViews: result.data.profileViews
+          }));
+        }
+      } else {
+        setLinkedinSnapshot({
+          loading: false,
+          lastSnapshot: null,
+          error: result.message
+        });
+        showNotification('error', result.message || 'Failed to create LinkedIn snapshot');
+      }
+    } catch (error) {
+      setLinkedinSnapshot({
+        loading: false,
+        lastSnapshot: null,
+        error: "Failed to create LinkedIn snapshot"
+      });
+      showNotification('error', 'Failed to create LinkedIn snapshot');
+    }
+  };
+
   const tabs = [
     { id: "overview", name: "Overview", icon: "material-symbols:dashboard" },
     { id: "posts", name: "Posts", icon: "material-symbols:article" },
@@ -77,6 +221,29 @@ const Social = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Notification Toast */}
+      {notification.show && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+          notification.type === 'success' 
+            ? 'bg-green-100 border border-green-400 text-green-700' 
+            : 'bg-red-100 border border-red-400 text-red-700'
+        }`}>
+          <div className="flex items-center gap-2">
+            <Icon 
+              icon={notification.type === 'success' ? "material-symbols:check-circle" : "material-symbols:error"} 
+              className="w-5 h-5" 
+            />
+            <p className="font-medium">{notification.message}</p>
+            <button
+              onClick={() => setNotification({ show: false, type: 'success', message: '' })}
+              className="ml-2 text-gray-500 hover:text-gray-700"
+            >
+              <Icon icon="material-symbols:close" className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-2xl p-8 text-white">
         <div className="flex items-center justify-between">
@@ -199,18 +366,53 @@ const Social = () => {
                       <p className="text-sm text-gray-600">
                         {platform.connected ? `${platform.followers} followers` : 'Not connected'}
                       </p>
+                      {platform.name === "LinkedIn" && platform.connected && linkedinSnapshot.lastSnapshot && (
+                        <p className="text-xs text-green-600">
+                          Last snapshot: {new Date(linkedinSnapshot.lastSnapshot.timestamp || Date.now()).toLocaleDateString()}
+                        </p>
+                      )}
+                      {platform.name === "LinkedIn" && linkedinSnapshot.error && (
+                        <p className="text-xs text-red-600">
+                          {linkedinSnapshot.error}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handlePlatformToggle(platform.name)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      platform.connected
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {platform.connected ? 'Connected' : 'Connect'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {platform.name === "LinkedIn" && platform.connected && (
+                      <button
+                        onClick={handleLinkedInSnapshot}
+                        disabled={linkedinSnapshot.loading}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          linkedinSnapshot.loading
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                        }`}
+                      >
+                        {linkedinSnapshot.loading ? (
+                          <div className="flex items-center gap-1">
+                            <Icon icon="material-symbols:refresh" className="w-3 h-3 animate-spin" />
+                            Snapping...
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <Icon icon="material-symbols:camera" className="w-3 h-3" />
+                            AI Snapshot
+                          </div>
+                        )}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handlePlatformToggle(platform.name)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        platform.connected
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {platform.connected ? 'Connected' : 'Connect'}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -349,6 +551,42 @@ const Social = () => {
 
       {activeTab === "analytics" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* LinkedIn AI Snapshot Results */}
+          {linkedinSnapshot.lastSnapshot && (
+            <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Icon icon="mdi:linkedin" className="w-5 h-5 text-blue-600" />
+                LinkedIn AI Snapshot Results
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-blue-600 font-medium">Profile Score</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {linkedinSnapshot.lastSnapshot.profileScore || 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <p className="text-sm text-green-600 font-medium">Optimization Tips</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    {linkedinSnapshot.lastSnapshot.tips?.length || 0}
+                  </p>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <p className="text-sm text-purple-600 font-medium">AI Insights</p>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {linkedinSnapshot.lastSnapshot.insights?.length || 0}
+                  </p>
+                </div>
+              </div>
+              {linkedinSnapshot.lastSnapshot.summary && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700 mb-2">AI Summary:</p>
+                  <p className="text-gray-600">{linkedinSnapshot.lastSnapshot.summary}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Engagement Chart */}
           <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Engagement Overview</h3>
@@ -461,9 +699,99 @@ const Social = () => {
       )}
 
       {activeTab === "settings" && (
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h3>
-          <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Profile Information for AI Analysis */}
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Icon icon="material-symbols:person" className="w-5 h-5" />
+              Profile Information for AI Analysis
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={userProfile.fullName}
+                  onChange={(e) => setUserProfile({...userProfile, fullName: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <input
+                  type="text"
+                  value={userProfile.location}
+                  onChange={(e) => setUserProfile({...userProfile, location: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Professional Headline</label>
+                <input
+                  type="text"
+                  value={userProfile.headline}
+                  onChange={(e) => setUserProfile({...userProfile, headline: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                <input
+                  type="text"
+                  value={userProfile.industry}
+                  onChange={(e) => setUserProfile({...userProfile, industry: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Skills (comma-separated)</label>
+                <input
+                  type="text"
+                  value={userProfile.skills.join(", ")}
+                  onChange={(e) => setUserProfile({...userProfile, skills: e.target.value.split(", ").map(s => s.trim())})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
+                <textarea
+                  value={userProfile.summary}
+                  onChange={(e) => setUserProfile({...userProfile, summary: e.target.value})}
+                  rows="4"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-between items-center">
+              <p className="text-sm text-gray-600">This information will be sent to LinkedIn AI for profile analysis</p>
+              <button
+                onClick={handleLinkedInSnapshot}
+                disabled={linkedinSnapshot.loading}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  linkedinSnapshot.loading
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {linkedinSnapshot.loading ? (
+                  <div className="flex items-center gap-2">
+                    <Icon icon="material-symbols:refresh" className="w-4 h-4 animate-spin" />
+                    Analyzing Profile...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Icon icon="material-symbols:psychology" className="w-4 h-4" />
+                    Analyze with AI
+                  </div>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Account Settings */}
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h3>
+            <div className="space-y-4">
             {/* Profile Section */}
             <div className="p-4 bg-gray-50 rounded-lg">
               <h4 className="text-md font-semibold text-gray-900 mb-3">Profile</h4>
@@ -535,11 +863,10 @@ const Social = () => {
                 Delete My Account
               </button>
             </div>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default Social;
+};export default Social;
