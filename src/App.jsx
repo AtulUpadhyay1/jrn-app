@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
 
 const Dashboard = lazy(() => import("./pages/dashboard"));
 const Login = lazy(() => import("./pages/auth/login"));
@@ -7,9 +8,17 @@ const Register = lazy(() => import("./pages/auth/register"));
 const ForgotPass = lazy(() => import("./pages/auth/forgot-password"));
 const Error = lazy(() => import("./pages/404"));
 
+// Admin Components
+const AdminLogin = lazy(() => import("./pages/admin/login"));
+const AdminDashboard = lazy(() => import("./pages/admin/dashboard"));
+const RolePlayCategory = lazy(() => import("./pages/admin/role-play/category"));
+const RolePlayUseCase = lazy(() => import("./pages/admin/role-play/use-cases"));
+
 import Layout from "./layout/Layout";
 import AuthLayout from "./layout/AuthLayout";
 import OnboardingLayout from "./layout/OnboardingLayout";
+import AdminLayout from "./layout/AdminLayout";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 // JRN Pages
 const RoleplayPage = lazy(() => import("./pages/roleplay"));
@@ -37,11 +46,31 @@ function App() {
   return (
     <main className="App  relative">
       <Routes>
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={
+          <Suspense fallback={<Loading />}>
+            <AdminLogin />
+          </Suspense>
+        } />
+        <Route path="/admin/*" element={
+          <AdminProtectedRoute>
+            <AdminLayout />
+          </AdminProtectedRoute>
+        }>
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="role-play-categories" element={<RolePlayCategory />} />
+          <Route path="role-play-use-cases" element={<RolePlayUseCase />} />
+          <Route path="" element={<Navigate to="/admin/dashboard" />} />
+        </Route>
+
+        {/* Regular Auth Routes */}
         <Route path="/" element={<AuthLayout />}>
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPass />} />
         </Route>
+        
+        {/* Regular App Routes */}
         <Route path="/*" element={<Layout />}>
           <Route path="dashboard" element={<Dashboard />} />
           
@@ -99,6 +128,20 @@ function App() {
           }
         />
       </Routes>
+      
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </main>
   );
 }
