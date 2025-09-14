@@ -271,7 +271,7 @@ const Matchmaking = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Job Matching Dashboard</h1>
+          <h6 className="text-3xl font-bold text-gray-900">Job Matching Dashboard</h6>
           <p className="text-gray-600 mt-1">Find jobs that match your preferences and skills</p>
         </div>
         <div className="flex gap-3">

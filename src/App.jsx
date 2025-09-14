@@ -35,6 +35,9 @@ const Assessment = lazy(() => import("./pages/assessment"));
 const ResumePage = lazy(() => import("./pages/resume/ResumePage"));
 const JobCopilotConfig = lazy(() => import("./pages/matchmaking/engine"));
 const JobSearchForm = lazy(() => import("./pages/matchmaking/job-form"));
+const LinkedInProfile = lazy(() => import("./pages/social/components/LinkedInProfile"));
+const InstagramProfile = lazy(() => import("./pages/social/components/InstagramProfile"));
+const GitHubProfile = lazy(() => import("./pages/social/components/GitHubProfile"));
 
 import Loading from "@/components/Loading";
 
@@ -119,6 +122,10 @@ function App() {
           <Route path="subscriptions" element={<ProfileSetup />} />
           <Route path="summary" element={<ProfileSetup />} />
         </Route>
+
+      
+    
+
         <Route
           path="/404"
           element={
