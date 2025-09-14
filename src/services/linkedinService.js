@@ -1,10 +1,10 @@
 import { axiosInstance } from "@/store/api/apiSlice";
 
 const linkedinService = {
-  createProfileSnapshot: async (profileData) => {
+  createProfileSnapshot: async () => {
     try {
       console.log("📡 Creating LinkedIn profile snapshot...");
-      const response = await axiosInstance.post("/linkedin-profile-ai/snapshot", profileData);
+      const response = await axiosInstance.post("/linkedin-profile-ai/snapshot");
       console.log("✅ LinkedIn snapshot successful:", response.data);
       return {
         success: true,

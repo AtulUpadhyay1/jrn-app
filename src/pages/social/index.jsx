@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import linkedinService from "../../services/linkedinService";
 
@@ -121,61 +121,7 @@ const Social = () => {
     setLinkedinSnapshot({ ...linkedinSnapshot, loading: true, error: null });
     
     try {
-      // Comprehensive profile data for AI analysis
-      const profileData = {
-        // Basic Profile Info
-        userId: "user123", // Replace with actual user ID from auth context
-        fullName: userProfile.fullName,
-        headline: userProfile.headline,
-        location: userProfile.location,
-        industry: userProfile.industry,
-        
-        // Profile Content
-        summary: userProfile.summary,
-        
-        // Experience Data
-        experience: userProfile.experience,
-        
-        // Education
-        education: userProfile.education,
-        
-        // Skills
-        skills: userProfile.skills,
-        
-        // Current Metrics
-        currentStats: {
-          connections: socialStats.connections,
-          profileViews: socialStats.profileViews,
-          postReach: socialStats.postReach,
-          engagementRate: socialStats.engagementRate
-        },
-        
-        // Recent Activity
-        recentPosts: posts.map(post => ({
-          content: post.content,
-          engagement: post.likes + post.comments + post.shares,
-          timestamp: post.timestamp
-        })),
-        
-        // Analysis Preferences
-        analysisOptions: {
-          includeConnections: true,
-          includeExperience: true,
-          includeEducation: true,
-          includeSkills: true,
-          includeContentAnalysis: true,
-          optimizationGoals: ["increase_visibility", "improve_engagement", "career_advancement"]
-        },
-        
-        // Metadata
-        timestamp: new Date().toISOString(),
-        profileCompleteness: 85, // percentage
-        lastUpdated: new Date().toISOString()
-      };
-
-      console.log("📤 Sending LinkedIn Profile Data to AI:", profileData);
-
-      const result = await linkedinService.createProfileSnapshot(profileData);
+      const result = await linkedinService.createProfileSnapshot();
       
       if (result.success) {
         setLinkedinSnapshot({
@@ -210,6 +156,28 @@ const Social = () => {
       showNotification('error', 'Failed to create LinkedIn snapshot');
     }
   };
+
+  // Call LinkedIn snapshot API on page load
+  useEffect(() => {
+    const fetchLinkedInSnapshot = async () => {
+      // Only call if LinkedIn is connected and we haven't already fetched data
+      const linkedinPlatform = connectedPlatforms.find(p => p.name === "LinkedIn");
+      if (linkedinPlatform?.connected && !linkedinSnapshot.lastSnapshot && !linkedinSnapshot.loading) {
+        console.log("🔄 Auto-fetching LinkedIn snapshot on page load...");
+        showNotification('success', 'Auto-analyzing your LinkedIn profile...');
+        try {
+          await handleLinkedInSnapshot();
+        } catch (error) {
+          console.error("❌ Failed to auto-fetch LinkedIn snapshot:", error);
+        }
+      }
+    };
+
+    // Add a small delay to ensure component is fully mounted
+    const timer = setTimeout(fetchLinkedInSnapshot, 1500);
+    
+    return () => clearTimeout(timer); // Cleanup timer on unmount
+  }, []); // Empty dependency array means this runs only once on mount
 
   const tabs = [
     { id: "overview", name: "Overview", icon: "material-symbols:dashboard" },
@@ -369,6 +337,12 @@ const Social = () => {
                       {platform.name === "LinkedIn" && platform.connected && linkedinSnapshot.lastSnapshot && (
                         <p className="text-xs text-green-600">
                           Last snapshot: {new Date(linkedinSnapshot.lastSnapshot.timestamp || Date.now()).toLocaleDateString()}
+                        </p>
+                      )}
+                      {platform.name === "LinkedIn" && linkedinSnapshot.loading && (
+                        <p className="text-xs text-blue-600 flex items-center gap-1">
+                          <Icon icon="material-symbols:refresh" className="w-3 h-3 animate-spin" />
+                          Analyzing profile...
                         </p>
                       )}
                       {platform.name === "LinkedIn" && linkedinSnapshot.error && (
