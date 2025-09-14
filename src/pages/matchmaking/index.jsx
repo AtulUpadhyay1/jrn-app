@@ -8,23 +8,10 @@ import { jobService } from "../../services/jobEngine";
 
 const Matchmaking = () => {
   const navigate = useNavigate();
+  const [loadingJobs, setLoadingJobs] = useState(false);
   
   // Mock data for engines and jobs
-  const [engines, setEngines] = useState([
-    {
-      id: 5,
-      title: "UX Designer",
-      location: "Los Angeles, CA",
-      contractType: "F", // Full-time
-      experienceLevel: "2", // Entry Level
-      workType: "3", // Hybrid
-      publishedAt: "r2592000", // Past month
-      created: "2024-08-25",
-      isActive: false,
-      matchCount: 8,
-      
-    }
-  ]);
+  const [engines, setEngines] = useState([]);
 
   // fetch engine from api
   useEffect(() => {
@@ -32,8 +19,16 @@ const Matchmaking = () => {
       const result = await jobService.fetchEngines();
       if (result.success) {
         setEngines(result.data);
+        // Set first engine as selected by default
+        if (result.data && result.data.length > 0) {
+          setSelectedEngine(result.data[0]);
+        }
       } else {
         console.error("Failed to fetch engines:", result.message);
+        // Set first mock engine as selected by default if API fails
+        if (engines && engines.length > 0) {
+          setSelectedEngine(engines[0]);
+        }
       }
     };
 
@@ -250,8 +245,15 @@ const Matchmaking = () => {
 }
   ]);
 
-  const [selectedEngine, setSelectedEngine] = useState(engines[0]);
+  const [selectedEngine, setSelectedEngine] = useState(null);
   const [filter, setFilter] = useState("all"); // all, applied, notInterested
+
+  // Set first engine as selected when engines are available
+  useEffect(() => {
+    if (engines && engines.length > 0 && !selectedEngine) {
+      setSelectedEngine(engines[0]);
+    }
+  }, [engines, selectedEngine]);
 
   const handleEngineToggle = (engineId) => {
     console.log("Toggling engine:", engineId);
@@ -262,43 +264,6 @@ const Matchmaking = () => {
     ));
     const engine = engines.find(e => e.id === engineId);
     changeEngineStatus(engineId, !engine.isActive);
-  };
-
-  const handleJobAction = (jobId, action) => {
-    setJobs(jobs.map(job => 
-      job.id === jobId 
-        ? { 
-            ...job, 
-            applied: action === 'apply' ? true : job.applied,
-            saved: action === 'save' ? !job.saved : job.saved,
-            notInterested: action === 'notInterested' ? true : job.notInterested
-          }
-        : job
-    ));
-    
-    // Optional: Show toast notification
-    if (action === 'apply') {
-      console.log(`Applied to job: ${jobs.find(j => j.id === jobId)?.title}`);
-    } else if (action === 'save') {
-      const job = jobs.find(j => j.id === jobId);
-      console.log(`${job?.saved ? 'Removed from' : 'Added to'} saved jobs: ${job?.title}`);
-    } else if (action === 'notInterested') {
-      console.log(`Marked as not interested: ${jobs.find(j => j.id === jobId)?.title}`);
-    }
-  };
-
-  const filteredJobs = jobs.filter(job => {
-    if (filter === "applied") return job.applied;
-    if (filter === "saved") return job.saved;
-    if (filter === "notInterested") return job.notInterested;
-    return !job.applied && !job.notInterested;
-  });
-
-  const getMatchColor = (percentage) => {
-    if (percentage >= 90) return "text-green-600 bg-green-100";
-    if (percentage >= 80) return "text-blue-600 bg-blue-100";
-    if (percentage >= 70) return "text-yellow-600 bg-yellow-100";
-    return "text-red-600 bg-red-100";
   };
 
   return (
@@ -352,7 +317,7 @@ const Matchmaking = () => {
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 text-lg mb-1">{engine.title}</h3>
+                  <h3 className="font-semibold text-gray-900 text-lg mb-1">{engine.keyword}</h3>
                   </div>
                 <div className="flex items-center gap-2 ml-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -383,44 +348,44 @@ const Matchmaking = () => {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Icon icon="heroicons:map-pin" className="w-4 h-4 text-gray-400" />
-                    <span className="truncate">{engine.location}</span>
+                    <span className="truncate">{engine.location}{engine.country && `, ${engine.country}`}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Icon icon="heroicons:briefcase" className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs">
-                      {engine.contractType === 'F' ? 'Full-time' : 
-                       engine.contractType === 'P' ? 'Part-time' : 
-                       engine.contractType === 'C' ? 'Contract' : 
-                       engine.contractType === 'T' ? 'Temporary' : 
-                       engine.contractType === 'I' ? 'Internship' : 'Volunteer'}
-                    </span>
+                    <span className="text-xs">{engine.job_type || 'Any'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Icon icon="heroicons:academic-cap" className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs">
-                      {engine.experienceLevel === '1' ? 'Internship' :
-                       engine.experienceLevel === '2' ? 'Entry Level' :
-                       engine.experienceLevel === '3' ? 'Associate' :
-                       engine.experienceLevel === '4' ? 'Mid-Senior' : 'Director'}
-                    </span>
+                    <span className="text-xs">{engine.experience_level || 'Any level'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Icon icon="heroicons:computer-desktop" className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs">
-                      {engine.workType === '1' ? 'On-site' :
-                       engine.workType === '2' ? 'Remote' : 'Hybrid'}
-                    </span>
+                    <span className="text-xs">{engine.remote || 'Any'}</span>
                   </div>
                 </div>
+
+                {/* Company and Radius */}
+                {(engine.company || engine.location_radius) && (
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {engine.company && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Icon icon="heroicons:building-office" className="w-4 h-4 text-gray-400" />
+                        <span className="text-xs truncate">{engine.company}</span>
+                      </div>
+                    )}
+                    {engine.location_radius && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Icon icon="heroicons:map" className="w-4 h-4 text-gray-400" />
+                        <span className="text-xs">Within {engine.location_radius} km</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Time Filter */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Icon icon="heroicons:clock" className="w-4 h-4 text-gray-400" />
-                  <span>
-                    {engine.publishedAt === 'r86400' ? 'Past 24 hours' :
-                     engine.publishedAt === 'r604800' ? 'Past week' :
-                     engine.publishedAt === 'r2592000' ? 'Past month' : 'Any time'}
-                  </span>
+                  <span>{engine.time_range || 'Any time'}</span>
                 </div>
 
                 {/* Match Count */}
@@ -430,7 +395,7 @@ const Matchmaking = () => {
                     <span className="text-sm font-medium text-gray-900">{engine.matchCount} matches found</span>
                   </div>
                   <span className="text-xs text-gray-500">
-                    Created {new Date(engine.created).toLocaleDateString()}
+                    Created {new Date(engine.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -442,93 +407,100 @@ const Matchmaking = () => {
       </div>
 
       {/* Jobs Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <Icon icon="material-symbols:work" className="w-6 h-6 text-indigo-600" />
-              Matched Jobs for "{selectedEngine.title}"
-            </h2>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500">{filteredJobs.length} jobs found</span>
+      {selectedEngine && (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <Icon icon="material-symbols:work" className="w-6 h-6 text-indigo-600" />
+                Matched Jobs for "{selectedEngine.keyword}"
+              </h2>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-500">
+                  {selectedEngine.jobs?.count || selectedEngine.matchCount || 0} jobs found
+                </span>
+              </div>
+            </div>
+            
+            {/* Engine Details */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-500">Location:</span>
+                  <span className="ml-2 font-medium">{selectedEngine.location}{selectedEngine.country && `, ${selectedEngine.country}`}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Job Type:</span>
+                  <span className="ml-2 font-medium">{selectedEngine.job_type || 'Any'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Experience:</span>
+                  <span className="ml-2 font-medium">{selectedEngine.experience_level || 'Any level'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Remote:</span>
+                  <span className="ml-2 font-medium">{selectedEngine.remote || 'Any'}</span>
+                </div>
+              </div>
             </div>
           </div>
-          
-          {/* Filter Tabs */}
-          <div className="flex gap-2">
-            {[
-              { key: "all", label: "Available", count: jobs.filter(j => !j.applied && !j.notInterested).length },
-              { key: "applied", label: "Applied", count: jobs.filter(j => j.applied).length },
-              { key: "saved", label: "Saved", count: jobs.filter(j => j.saved).length },
-              { key: "notInterested", label: "Not Interested", count: jobs.filter(j => j.notInterested).length }
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === tab.key
-                    ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                }`}
-              >
-                {tab.label} ({tab.count})
-              </button>
-            ))}
-          </div>
-        </div>
 
-        <div className="p-6">
-          {filteredJobs.length === 0 ? (
-            <div className="text-center py-12">
-              <Icon icon="material-symbols:work-off" className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
-              <p className="text-gray-500">
-                {filter === "all" ? "Try adjusting your engine settings or create a new engine." : 
-                 filter === "applied" ? "You haven't applied to any jobs yet." :
-                 filter === "saved" ? "You haven't saved any jobs yet." :
-                 "No jobs marked as not interested."}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredJobs.map((job) => (
-                <div key={job.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 bg-white">
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-4 flex-1">
-                      {/* Company Logo Placeholder */}
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
-                        <span className="text-blue-600 font-semibold text-sm">
-                          {job.companyName?.charAt(0) || 'C'}
-                        </span>
-                      </div>
+          <div className="p-6">
+            {!selectedEngine.jobs?.results || selectedEngine.jobs.results.length === 0 ? (
+              <div className="text-center py-12">
+                <Icon icon="material-symbols:work-off" className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
+                <p className="text-gray-500">
+                  This engine hasn't found any matching jobs yet. Try adjusting your search criteria.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {selectedEngine.jobs.results.map((job) => (
+                  <div key={job.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 bg-white">
+                    <div className="flex items-start gap-4">
+                      {/* Company Logo */}
+                      {job.company_logo ? (
+                        <img 
+                          src={job.company_logo} 
+                          alt={job.company}
+                          className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
+                          <span className="text-blue-600 font-semibold text-sm">
+                            {job.company?.charAt(0) || 'C'}
+                          </span>
+                        </div>
+                      )}
                       
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-lg text-gray-900 hover:text-indigo-600 cursor-pointer transition-colors">
+                              <a
+                                href={job.job_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-lg text-gray-900 hover:text-indigo-600 cursor-pointer transition-colors"
+                              >
                                 {job.title}
-                              </h3>
-                              {job.applyType === "EASY_APPLY" && (
-                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-                                  Easy Apply
+                              </a>
+                              {job.site === "linkedin" && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                  LinkedIn
                                 </span>
                               )}
                             </div>
                             <div className="flex items-center gap-2 mb-2">
-                              <a 
-                                href={job.companyUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-indigo-600 font-medium hover:text-indigo-800 transition-colors"
-                              >
-                                {job.companyName}
-                              </a>
-                              {job.sector && (
-                                <span className="text-gray-400">•</span>
-                              )}
-                              {job.sector && (
-                                <span className="text-gray-600 text-sm">{job.sector}</span>
+                              <span className="text-indigo-600 font-medium">
+                                {job.company}
+                              </span>
+                              {job.company_industry && (
+                                <>
+                                  <span className="text-gray-400">•</span>
+                                  <span className="text-gray-600 text-sm">{job.company_industry}</span>
+                                </>
                               )}
                             </div>
                           </div>
@@ -539,139 +511,84 @@ const Matchmaking = () => {
                             <Icon icon="heroicons:map-pin" className="w-4 h-4 text-gray-400" />
                             {job.location}
                           </div>
-                          {job.salary && (
+                          {job.min_amount && job.max_amount && (
                             <div className="flex items-center gap-1">
                               <Icon icon="heroicons:currency-dollar" className="w-4 h-4 text-gray-400" />
-                              {job.salary}
+                              ${job.min_amount?.toLocaleString()} - ${job.max_amount?.toLocaleString()} {job.currency}
                             </div>
                           )}
                           <div className="flex items-center gap-1">
                             <Icon icon="heroicons:briefcase" className="w-4 h-4 text-gray-400" />
-                            {job.contractType}
+                            {job.job_type}
                           </div>
-                          {job.experienceLevel !== "Not Applicable" && (
+                          {job.job_level && (
                             <div className="flex items-center gap-1">
                               <Icon icon="heroicons:academic-cap" className="w-4 h-4 text-gray-400" />
-                              {job.experienceLevel}
+                              {job.job_level}
                             </div>
                           )}
                           <div className="flex items-center gap-1">
                             <Icon icon="heroicons:clock" className="w-4 h-4 text-gray-400" />
-                            {job.postedTime}
+                            {new Date(job.date_posted).toLocaleDateString()}
                           </div>
-                        </div>
-                        
-                        {/* Job Description Preview */}
-                        <p className="text-gray-700 text-sm mb-4 line-clamp-3 leading-relaxed">
-                          {job.description?.length > 200 
-                            ? `${job.description.substring(0, 200)}...` 
-                            : job.description
-                          }
-                        </p>
-                        
-                        {/* Work Type & Applications Count */}
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-                          {job.workType && (
-                            <span className="px-2 py-1 bg-gray-100 rounded-full">
-                              {job.workType}
-                            </span>
-                          )}
-                          {job.applicationsCount && (
+                          {job.is_remote && (
                             <div className="flex items-center gap-1">
-                              <Icon icon="heroicons:users" className="w-3 h-3" />
-                              {job.applicationsCount}
+                              <Icon icon="heroicons:home" className="w-4 h-4 text-green-400" />
+                              <span className="text-green-600">Remote</span>
                             </div>
                           )}
                         </div>
                         
-                        {/* Benefits Preview */}
-                        {job.benefits && (
+                        {/* Job Description Preview */}
+                        {job.description && (
+                          <p className="text-gray-700 text-sm mb-4 line-clamp-3 leading-relaxed">
+                            {job.description.length > 200 
+                              ? `${job.description.substring(0, 200)}...` 
+                              : job.description
+                            }
+                          </p>
+                        )}
+                        
+                        {/* Job Function */}
+                        {job.job_function && (
                           <div className="flex flex-wrap gap-2 mb-4">
-                            {job.benefits.split('\n').slice(0, 3).map((benefit, idx) => (
-                              benefit.trim() && (
-                                <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                                  {benefit.trim()}
-                                </span>
-                              )
+                            {job.job_function.split(',').slice(0, 3).map((func, idx) => (
+                              <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                {func.trim()}
+                              </span>
                             ))}
                           </div>
                         )}
                         
                         {/* Action Buttons */}
                         <div className="flex items-center gap-3 pt-2">
-                          {!job.applied && !job.notInterested ? (
-                            <>
-                              <a
-                                href={job.applyUrl || job.jobUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => handleJobAction(job.id, 'apply')}
-                                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                              >
-                                <Icon icon="heroicons:arrow-top-right-on-square" className="w-4 h-4" />
-                                Apply Now
-                              </a>
-                              <button
-                                onClick={() => navigate(`/jobs/${job.id}`)}
-                                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                              >
-                                <Icon icon="heroicons:eye" className="w-4 h-4" />
-                                View Details
-                              </button>
-                              <button
-                                onClick={() => handleJobAction(job.id, 'save')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                  job.saved 
-                                    ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' 
-                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                                }`}
-                              >
-                                <Icon icon={job.saved ? "heroicons:bookmark-solid" : "heroicons:bookmark"} className="w-4 h-4" />
-                                {job.saved ? 'Saved' : 'Save'}
-                              </button>
-                              <button
-                                onClick={() => handleJobAction(job.id, 'notInterested')}
-                                className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                              >
-                                <Icon icon="heroicons:x-mark" className="w-4 h-4" />
-                                Not Interested
-                              </button>
-                            </>
-                          ) : job.applied ? (
-                            <div className="flex items-center gap-2 text-green-600">
-                              <Icon icon="heroicons:check-circle" className="w-5 h-5" />
-                              <span className="font-medium">Applied</span>
-                              <span className="text-gray-400">•</span>
-                              <span className="text-sm text-gray-600">
-                                Applied on {new Date(job.publishedAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-gray-500">
-                              <Icon icon="heroicons:no-symbol" className="w-5 h-5" />
-                              <span className="font-medium">Not Interested</span>
-                            </div>
-                          )}
-                          
-                          {/* Share & More Options */}
-                          <div className="ml-auto flex items-center gap-2">
-                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                              <Icon icon="heroicons:share" className="w-4 h-4" />
-                            </button>
-                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                              <Icon icon="heroicons:ellipsis-horizontal" className="w-4 h-4" />
-                            </button>
-                          </div>
+                          <a
+                            href={job.job_url_direct || job.job_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                          >
+                            <Icon icon="heroicons:arrow-top-right-on-square" className="w-4 h-4" />
+                            Apply Now
+                          </a>
+                          <button className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                            <Icon icon="heroicons:bookmark" className="w-4 h-4" />
+                            Save
+                          </button>
+                          <button className="inline-flex items-center gap-2 px-3 py-2 text-gray-500 hover:text-gray-700 transition-colors text-sm">
+                            <Icon icon="heroicons:x-mark" className="w-4 h-4" />
+                            Not interested
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

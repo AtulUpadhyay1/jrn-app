@@ -19,55 +19,54 @@ const JobSearchForm = () => {
     formState: { errors }
   } = useForm({
     defaultValues: {
-      title: '',
+      keyword: '',
       location: '',
-      contractType: '',
-      experienceLevel: '',
-      workType: '',
-      publishedAt: ''
+      country: '',
+      time_range: '',
+      job_type: '',
+      experience_level: '',
+      remote: '',
+      company: '',
+      location_radius: ''
     }
   });
 
   // Watch form values for controlled components
   const formData = watch();
 
-  // Contract Type options
-  const contractTypeOptions = [
-    { value: 'F', label: 'Full-Time' },
-    { value: 'P', label: 'Part-Time' },
-    { value: 'C', label: 'Contract' },
-    { value: 'T', label: 'Temporary' },
-    { value: 'I', label: 'Internship' },
-    { value: 'V', label: 'Volunteer' }
+  // Time Range options
+  const timeRangeOptions = [
+    { value: 'Past 24 hours', label: 'Past 24 hours' },
+    { value: 'Past 2 Days', label: 'Past 2 Days' },
+    { value: 'Past Week', label: 'Past Week' },
+  ];
+
+  // Job Type options
+  const jobTypeOptions = [
+    { value: 'Full-time', label: 'Full-time' },
+    { value: 'Part-time', label: 'Part-time' },
+    { value: 'Contract', label: 'Contract' },
+    { value: 'Temporary', label: 'Temporary' },
+    { value: 'Internship', label: 'Internship' },
+    { value: 'Volunteer', label: 'Volunteer' }
   ];
 
   // Experience Level options
   const experienceLevelOptions = [
-    { value: '1', label: 'Internship' },
-    { value: '2', label: 'Entry Level' },
-    { value: '3', label: 'Associate' },
-    { value: '4', label: 'Mid Senior Level' },
-    { value: '5', label: 'Director' }
+    { value: 'Internship', label: 'Internship' },
+    { value: 'Entry level', label: 'Entry level' },
+    { value: 'Associate', label: 'Associate' },
+    { value: 'Mid-Senior level', label: 'Mid-Senior level' },
+    { value: 'Director', label: 'Director' }
   ];
 
-  // Work Type options
-  const workTypeOptions = [
-    { value: '1', label: 'On Site' },
-    { value: '2', label: 'Remote' },
-    { value: '3', label: 'Hybrid' }
+  // Remote Work options
+  const remoteOptions = [
+    { value: 'On-site', label: 'On-site' },
+    { value: 'Remote', label: 'Remote' },
+    { value: 'Hybrid', label: 'Hybrid' }
   ];
 
-  // Published At options
-  const publishedAtOptions = [
-    { value: 'r86400', label: 'Past 24 Hours' },
-    { value: 'r604800', label: 'Past Week' },
-    { value: 'r2592000', label: 'Past Month' }
-  ];
-
-  const handleInputChange = (name, value) => {
-    // This function is no longer needed with react-hook-form
-    // Values are automatically handled by the register function
-  };
 
   const handleSubmit = async (data) => {
     setLoading(true);
@@ -106,10 +105,10 @@ const JobSearchForm = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Job Search Engine
+            Create Job Search Engine
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Find your perfect job opportunity
+            Configure your automated job search criteria and preferences
           </p>
         </div>
       </div>
@@ -118,16 +117,16 @@ const JobSearchForm = () => {
       <Card>
         <div className="p-6">
           <form onSubmit={handleFormSubmit(handleSubmit)} className="space-y-6">
-            {/* Job Title and Location Row */}
+            {/* Keyword and Location Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Textinput
-                  name="title"
-                  label="Job Title"
+                  name="keyword"
+                  label="Keyword"
                   type="text"
-                  placeholder="e.g., Developer, Designer, Manager"
+                  placeholder="e.g., python developer, AI, product manager"
                   register={register}
-                  error={errors.title}
+                  error={errors.keyword}
                 />
               </div>
               <div>
@@ -135,58 +134,99 @@ const JobSearchForm = () => {
                   name="location"
                   label="Location"
                   type="text"
-                  placeholder="e.g., Delhi, Mumbai, Remote"
+                  placeholder="e.g., Paris, New York, India"
                   register={register}
                   error={errors.location}
                 />
               </div>
             </div>
 
-            {/* Contract Type and Experience Level Row */}
+            {/* Country and Company Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Select
-                  name="contractType"
-                  label="Contract Type"
-                  //placeholder="Select Contract Type"
-                  options={contractTypeOptions}
+                <Textinput
+                  name="country"
+                  label="Country"
+                  type="text"
+                  placeholder="e.g., India, United States"
                   register={register}
-                  error={errors.contractType}
+                  error={errors.country}
                 />
               </div>
               <div>
-                <Select
-                  name="experienceLevel"
-                  label="Experience Level"
-                  //placeholder="Select Experience Level"
-                  options={experienceLevelOptions}
+                <Textinput
+                  name="company"
+                  label="Company"
+                  type="text"
+                  placeholder="e.g., Google, Microsoft (optional)"
                   register={register}
-                  error={errors.experienceLevel}
+                  error={errors.company}
                 />
               </div>
             </div>
 
-            {/* Work Type and Published Date Row */}
+            {/* Time Range and Job Type Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Select
-                  name="workType"
-                  label="Work Type"
-                  //placeholder="Select Work Type"
-                  options={workTypeOptions}
+                  name="time_range"
+                  label="Time Range"
+                  placeholder="Select Time Range"
+                  options={timeRangeOptions}
                   register={register}
-                  error={errors.workType}
+                  error={errors.time_range}
                 />
               </div>
               <div>
                 <Select
-                  name="publishedAt"
-                  label="Date Posted"
-                  //placeholder="Select Date Range"
-                  options={publishedAtOptions}
+                  name="job_type"
+                  label="Job Type"
+                  placeholder="Select Job Type"
+                  options={jobTypeOptions}
                   register={register}
-                  error={errors.publishedAt}
+                  error={errors.job_type}
                 />
+              </div>
+            </div>
+
+            {/* Experience Level and Remote Work Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Select
+                  name="experience_level"
+                  label="Experience Level"
+                  placeholder="Select Experience Level"
+                  options={experienceLevelOptions}
+                  register={register}
+                  error={errors.experience_level}
+                />
+              </div>
+              <div>
+                <Select
+                  name="remote"
+                  label="Remote Work"
+                  placeholder="Select Work Type"
+                  options={remoteOptions}
+                  register={register}
+                  error={errors.remote}
+                />
+              </div>
+            </div>
+
+            {/* Location Radius */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Textinput
+                  name="location_radius"
+                  label="Location Radius (km)"
+                  type="number"
+                  placeholder="e.g., 25 (optional)"
+                  register={register}
+                  error={errors.location_radius}
+                />
+              </div>
+              <div>
+                {/* Empty div for grid alignment */}
               </div>
             </div>
 
@@ -199,10 +239,10 @@ const JobSearchForm = () => {
                 disabled={loading}
               >
                 <Icon
-                  icon="heroicons-outline:search"
+                  icon="heroicons-outline:cog-6-tooth"
                   className="w-4 h-4 mr-2"
                 />
-                Search Jobs
+                Create Engine
               </Button>
               
               <Button
@@ -225,27 +265,35 @@ const JobSearchForm = () => {
       <Card>
         <div className="p-6">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-            Search Tips
+            Engine Creation Tips
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600 dark:text-slate-400">
             <div className="space-y-2">
               <div className="flex items-start">
                 <Icon icon="heroicons-outline:light-bulb" className="w-4 h-4 mr-2 mt-0.5 text-yellow-500" />
-                <span>Use specific job titles for better results</span>
+                <span>Use specific keywords like "python developer" or "AI"</span>
               </div>
               <div className="flex items-start">
                 <Icon icon="heroicons-outline:light-bulb" className="w-4 h-4 mr-2 mt-0.5 text-yellow-500" />
-                <span>Try different location formats (city, state, remote)</span>
+                <span>Location can be city names, countries, or regions</span>
+              </div>
+              <div className="flex items-start">
+                <Icon icon="heroicons-outline:light-bulb" className="w-4 h-4 mr-2 mt-0.5 text-yellow-500" />
+                <span>Country codes like "FR", "US", "AU" work best</span>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-start">
                 <Icon icon="heroicons-outline:light-bulb" className="w-4 h-4 mr-2 mt-0.5 text-yellow-500" />
-                <span>Filter by contract type to match your preferences</span>
+                <span>Time range filters help find fresh opportunities</span>
               </div>
               <div className="flex items-start">
                 <Icon icon="heroicons-outline:light-bulb" className="w-4 h-4 mr-2 mt-0.5 text-yellow-500" />
-                <span>Use recent date filters for the latest opportunities</span>
+                <span>Leave optional fields empty for broader searches</span>
+              </div>
+              <div className="flex items-start">
+                <Icon icon="heroicons-outline:light-bulb" className="w-4 h-4 mr-2 mt-0.5 text-yellow-500" />
+                <span>Location radius helps narrow down local jobs</span>
               </div>
             </div>
           </div>
