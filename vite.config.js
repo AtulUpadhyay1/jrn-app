@@ -16,7 +16,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://bank.techuptechnologies.in",
+        target: "https://api.jobreadynowai.com",
         changeOrigin: true,
         secure: false,
       },
