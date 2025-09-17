@@ -3,7 +3,7 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 export const axiosInstance = axios.create({
-  baseURL: "/api/", // Using proxy - Vite will forward to http://localhost:8000
+  baseURL: "https://api.jobreadynowai.com/api/",
   timeout: 30000, // Increased to 30 seconds
   headers: {
     "Content-Type": "application/json",
