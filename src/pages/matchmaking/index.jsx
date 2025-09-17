@@ -256,14 +256,15 @@ const Matchmaking = () => {
   }, [engines, selectedEngine]);
 
   const handleEngineToggle = (engineId) => {
-    console.log("Toggling engine:", engineId);
-    setEngines(engines.map(engine => 
-      engine.id === engineId 
-        ? { ...engine, isActive: !engine.isActive }
-        : engine
-    ));
-    const engine = engines.find(e => e.id === engineId);
-    changeEngineStatus(engineId, !engine.isActive);
+    // Make the clicked engine active, others inactive
+    setEngines((prev) =>
+      prev.map((engine) => ({ ...engine, isActive: engine.id === engineId }))
+    );
+    const engine = engines.find((e) => e.id === engineId);
+    // If it was already active, do nothing; otherwise, activate via API
+    if (!engine?.isActive) {
+      changeEngineStatus(engineId, true);
+    }
   };
 
   return (
@@ -319,6 +320,19 @@ const Matchmaking = () => {
                   </div>
                 <div className="flex items-center gap-2 ml-3">
                   
+
+                  {engine.isActive ? (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                      Active
+                    </span>
+                  ) : (
+                    <Button
+                      onClick={() => handleEngineToggle(engine.id)}
+                      className="btn-sm btn-primary"
+                    >
+                      Active
+                    </Button>
+                  )}
                 </div>
               </div>
               

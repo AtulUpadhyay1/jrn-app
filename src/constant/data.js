@@ -53,24 +53,24 @@ export const menuItems = [
     icon: "heroicons-outline:information-circle",
     link: "social",
   },
-  {
-    title: "Inbox",
-    isHide: true,
-    icon: "heroicons-outline:document-text",
-    link: "inbox",
-  },
-  {
-    title: "Comparative Analysis",
-    isHide: true,
-    icon: "heroicons-outline:chart-bar",
-    link: "comparative-analysis",
-  },
-  {
-    title: "Assessment",
-    isHide: true,
-    icon: "heroicons-outline:clipboard-check",
-    link: "assessment",
-  },
+  // {
+  //   title: "Inbox",
+  //   isHide: true,
+  //   icon: "heroicons-outline:document-text",
+  //   link: "inbox",
+  // },
+  // {
+  //   title: "Comparative Analysis",
+  //   isHide: true,
+  //   icon: "heroicons-outline:chart-bar",
+  //   link: "comparative-analysis",
+  // },
+  // {
+  //   title: "Assessment",
+  //   isHide: true,
+  //   icon: "heroicons-outline:clipboard-check",
+  //   link: "assessment",
+  // },
   {
     isHeadr: true,
     title: "Rewards",

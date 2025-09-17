@@ -64,20 +64,20 @@ const Social = () => {
       color: "text-blue-600 border-blue-600",
       bgColor: "bg-blue-50"
     },
-    {
-      id: "instagram",
-      name: "Instagram", 
-      icon: "mdi:instagram",
-      color: "text-pink-600 border-pink-600",
-      bgColor: "bg-pink-50"
-    },
-    {
-      id: "github",
-      name: "GitHub",
-      icon: "mdi:github",
-      color: "text-gray-800 border-gray-800",
-      bgColor: "bg-gray-50"
-    }
+    // {
+    //   id: "instagram",
+    //   name: "Instagram", 
+    //   icon: "mdi:instagram",
+    //   color: "text-pink-600 border-pink-600",
+    //   bgColor: "bg-pink-50"
+    // },
+    // {
+    //   id: "github",
+    //   name: "GitHub",
+    //   icon: "mdi:github",
+    //   color: "text-gray-800 border-gray-800",
+    //   bgColor: "bg-gray-50"
+    // }
   ];
 
   const getPriorityColor = (priority) => {
@@ -93,10 +93,10 @@ const Social = () => {
     switch (activeTab) {
       case 'linkedin':
         return <LinkedInProfile />;
-      case 'instagram':
-        return <InstagramProfile />;
-      case 'github':
-        return <GitHubProfile />;
+      // case 'instagram':
+      //   return <InstagramProfile />;
+      // case 'github':
+      //   return <GitHubProfile />;
       default:
         return <LinkedInProfile />;
     }

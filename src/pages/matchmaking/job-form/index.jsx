@@ -230,11 +230,11 @@ const JobSearchForm = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Button */}
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-200 dark:border-slate-700">
               <Button
                 type="submit"
-                className="flex-1 sm:flex-none"
+                className="btn-primary flex-1 sm:flex-none"
                 isLoading={loading}
                 disabled={loading}
               >
@@ -244,25 +244,13 @@ const JobSearchForm = () => {
                 />
                 Create Engine
               </Button>
-              
-              <Button
-                type="button"
-                onClick={handleReset}
-                disabled={loading}
-              >
-                <Icon
-                  icon="heroicons-outline:refresh"
-                  className="w-4 h-4 mr-2"
-                />
-                Reset
-              </Button>
             </div>
           </form>
         </div>
       </Card>
 
       {/* Search Tips */}
-      <Card>
+      {/* <Card>
         <div className="p-6">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Engine Creation Tips
@@ -298,7 +286,7 @@ const JobSearchForm = () => {
             </div>
           </div>
         </div>
-      </Card>
+      </Card> */}
     </div>
   );
 };
