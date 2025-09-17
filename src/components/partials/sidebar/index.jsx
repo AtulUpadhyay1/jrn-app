@@ -13,6 +13,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 const Sidebar = () => {
   const scrollableNodeRef = useRef();
   const [scroll, setScroll] = useState(false);
+  const hoverTimeoutRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +24,13 @@ const Sidebar = () => {
       }
     };
     scrollableNodeRef.current.addEventListener("scroll", handleScroll);
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
   }, [scrollableNodeRef]);
 
   const [collapsed, setMenuCollapsed] = useSidebar();
@@ -32,33 +40,38 @@ const Sidebar = () => {
   const [isSemiDark] = useSemiDark();
   // skin
   const [skin] = useSkin();
+
+  const handleMouseEnter = () => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setMenuHover(true);
+  };
+
+  const handleMouseLeave = () => {
+    // Add a small delay before hiding to prevent flickering
+    hoverTimeoutRef.current = setTimeout(() => {
+      setMenuHover(false);
+    }, 100);
+  };
   return (
     <div className={isSemiDark ? "dark" : ""}>
       <div
-        className={`sidebar-wrapper bg-white dark:bg-slate-800     ${
-          collapsed ? "w-[72px] close_sidebar" : "w-[248px]"
+        className={`sidebar-wrapper bg-white dark:bg-slate-800 transition-all duration-300 ${
+          collapsed && !menuHover ? "w-[72px] close_sidebar" : "w-[248px]"
         }
-      ${menuHover ? "sidebar-hovered" : ""}
+      ${menuHover && collapsed ? "sidebar-hovered" : ""}
       ${
         skin === "bordered"
           ? "border-r border-slate-200 dark:border-slate-700"
           : "shadow-base"
       }
       `}
-        onMouseEnter={() => {
-          setMenuHover(true);
-          if (collapsed) {
-            setMenuCollapsed(false);
-          }
-        }}
-        onMouseLeave={() => {
-          setMenuHover(false);
-          if (!collapsed) {
-            setMenuCollapsed(true);
-          }
-        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
-        <SidebarLogo menuHover={menuHover} />
+        <SidebarLogo menuHover={menuHover} collapsed={collapsed} />
         <div
           className={`h-[60px]  absolute top-[80px] nav-shadow z-1 w-full transition-all duration-200 pointer-events-none ${
             scroll ? " opacity-100" : " opacity-0"
@@ -69,7 +82,7 @@ const Sidebar = () => {
           className="sidebar-menu px-4 h-[calc(100%-80px)]"
           scrollableNodeProps={{ ref: scrollableNodeRef }}
         >
-          <Navmenu menus={menuItems} />
+          <Navmenu menus={menuItems} collapsed={collapsed} menuHover={menuHover} />
           {/* {!collapsed && (
             <div className="bg-purple-100 mb-16 mt-24 p-4 relative text-center rounded-2xl text-white">
             
@@ -96,8 +109,8 @@ const Sidebar = () => {
 
 
           <div className="mb-8">
-  {!collapsed ? (
-    // Full view when sidebar is expanded
+  {!collapsed || menuHover ? (
+    // Full view when sidebar is expanded or hovered
     <div className="bg-grey-100 rounded-lg p-4 text-center border transition-all">
       <div className="w-20 h-20 bg-white mx-auto mb-2 rounded-lg flex items-center justify-center border-2 border-dashed border-grey-300">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-16">
@@ -112,7 +125,7 @@ const Sidebar = () => {
       </button>
     </div>
   ) : (
-    // Compact view when sidebar is collapsed
+    // Compact view when sidebar is collapsed and not hovered
     <div className="flex flex-col items-center justify-center p-2">
       <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-dashed border-grey-300">
         

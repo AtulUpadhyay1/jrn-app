@@ -11,76 +11,41 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Textinput from "@/components/ui/Textinput";
 import Select from "@/components/ui/Select";
-import Textarea from "@/components/ui/Textarea";
 import Badge from "@/components/ui/Badge";
 import Icon from "@/components/ui/Icon";
 
-import { rolePlayUseCaseService } from "@/services/rolePlayUseCaseService";
-import { rolePlayCategoryService } from "@/services/rolePlayCategoryService";
+import { userService } from "@/services/userService";
 
-// Validation schema for use case form
-const useCaseSchema = yup
+// Minimal validation for edit form (adjust fields as your API supports)
+const userSchema = yup
   .object({
-    name: yup
-      .string()
-      .required("Name is required")
-      .min(2, "Name must be at least 2 characters")
-      .max(100, "Name must not exceed 100 characters"),
-    category_id: yup
-      .number()
-      .typeError("Category is required")
-      .required("Category is required")
-      .integer("Invalid category")
-      .positive("Invalid category"),
-    prompt: yup
-      .string()
-      .required("Prompt is required")
-      .min(5, "Prompt must be at least 5 characters"),
-    time: yup
-      .string()
-      .required("Time is required")
-      .max(20, "Time must not exceed 20 characters"),
+    name: yup.string().required("Name is required").min(2).max(100),
+    email: yup.string().email("Invalid email").required("Email is required"),
+    status: yup.string().oneOf(["active", "inactive"]).required(),
   })
   .required();
 
-const RolePlayUseCases = () => {
+const Users = () => {
   const queryClient = useQueryClient();
 
   // UI state
   const [searchTerm, setSearchTerm] = useState("");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedUseCase, setSelectedUseCase] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
 
-  // Fetch use cases
+  // Fetch users
   const {
-    data: useCasesResponse,
-    isLoading: isUseCasesLoading,
-    error: useCasesError,
+    data: usersResponse,
+    isLoading,
+    error,
   } = useQuery({
-    queryKey: ["rolePlayUseCases"],
-    queryFn: rolePlayUseCaseService.getUseCases,
+    queryKey: ["adminUsers"],
+    queryFn: () => userService.getUsers(),
   });
 
-  const useCases = useCasesResponse?.data || [];
+  const users = usersResponse?.data || [];
 
-  // Fetch categories for select
-  const {
-    data: categoriesResponse,
-    isLoading: isCategoriesLoading,
-    error: categoriesError,
-  } = useQuery({
-    queryKey: ["rolePlayCategories"],
-    queryFn: rolePlayCategoryService.getCategories,
-  });
-
-  const categories = categoriesResponse?.data || [];
-  const categoryOptions = useMemo(
-    () => categories.map((c) => ({ value: c.id, label: c.name })),
-    [categories]
-  );
-
-  // Form hook (shared for create and edit)
+  // Edit form
   const {
     register,
     handleSubmit,
@@ -88,74 +53,57 @@ const RolePlayUseCases = () => {
     reset,
     setValue,
   } = useForm({
-    resolver: yupResolver(useCaseSchema),
+    resolver: yupResolver(userSchema),
     mode: "all",
     defaultValues: {
       name: "",
-      category_id: "",
-      prompt: "",
-      time: "",
+      email: "",
+      status: "active",
     },
   });
 
   // Mutations
-  const createUseCaseMutation = useMutation({
-    mutationFn: rolePlayUseCaseService.createUseCase,
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }) => userService.updateUser(id, data),
     onSuccess: (response) => {
-      toast.success(response.message || "Use case created successfully");
-      setIsCreateModalOpen(false);
-      reset();
-      queryClient.invalidateQueries({ queryKey: ["rolePlayUseCases"] });
-    },
-    onError: (error) => {
-      console.error("Error creating use case:", error);
-      toast.error(
-        error?.response?.data?.message || error?.message || "Failed to create use case"
-      );
-    },
-  });
-
-  const updateUseCaseMutation = useMutation({
-    mutationFn: ({ id, data }) => rolePlayUseCaseService.updateUseCase(id, data),
-    onSuccess: (response) => {
-      toast.success(response.message || "Use case updated successfully");
+      toast.success(response.message || "User updated successfully");
       setIsEditModalOpen(false);
-      setSelectedUseCase(null);
+      setSelectedUser(null);
       reset();
-      queryClient.invalidateQueries({ queryKey: ["rolePlayUseCases"] });
+      queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
     },
     onError: (error) => {
-      console.error("Error updating use case:", error);
+      console.error("Error updating user:", error);
       toast.error(
-        error?.response?.data?.message || error?.message || "Failed to update use case"
+        error?.response?.data?.message || error?.message || "Failed to update user"
       );
     },
   });
 
-  const deleteUseCaseMutation = useMutation({
-    mutationFn: rolePlayUseCaseService.deleteUseCase,
+  const deleteUserMutation = useMutation({
+    mutationFn: userService.deleteUser,
     onSuccess: (response) => {
-      toast.success(response.message || "Use case deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["rolePlayUseCases"] });
+      toast.success(response.message || "User deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
     },
     onError: (error) => {
-      console.error("Error deleting use case:", error);
+      console.error("Error deleting user:", error);
       toast.error(
-        error?.response?.data?.message || error?.message || "Failed to delete use case"
+        error?.response?.data?.message || error?.message || "Failed to delete user"
       );
     },
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: rolePlayUseCaseService.toggleUseCaseStatus,
-    onSuccess: (response, useCaseId) => {
-      const u = useCases.find((uc) => uc.id === useCaseId);
+    mutationFn: userService.toggleUserStatus,
+    onSuccess: (response, userId) => {
+      const u = users.find((x) => x.id === userId);
       const statusText = u?.status === "active" ? "deactivated" : "activated";
-      toast.success(response.message || `Use case ${statusText} successfully`);
-      queryClient.invalidateQueries({ queryKey: ["rolePlayUseCases"] });
+      toast.success(response.message || `User ${statusText} successfully`);
+      queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
     },
     onError: (error) => {
-      console.error("Error toggling status:", error);
+      console.error("Error toggling user status:", error);
       toast.error(
         error?.response?.data?.message || error?.message || "Failed to toggle status"
       );
@@ -163,30 +111,23 @@ const RolePlayUseCases = () => {
   });
 
   // Handlers
-  const onCreate = (formData) => {
-    const payload = { ...formData, category_id: Number(formData.category_id) };
-    createUseCaseMutation.mutate(payload);
-  };
-
-  const onUpdate = (formData) => {
-    if (!selectedUseCase) return;
-    const payload = { ...formData, category_id: Number(formData.category_id) };
-    updateUseCaseMutation.mutate({ id: selectedUseCase.id, data: payload });
-  };
-
-  const handleEdit = (useCase) => {
-    setSelectedUseCase(useCase);
-    setValue("name", useCase.name);
-    setValue("category_id", useCase.category_id);
-    setValue("prompt", useCase.prompt || "");
-    setValue("time", useCase.time || "");
+  const handleEdit = (user) => {
+    setSelectedUser(user);
+    setValue("name", user.name || "");
+    setValue("email", user.email || "");
+    setValue("status", user.status || "active");
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (useCase) => {
+  const handleUpdate = (data) => {
+    if (!selectedUser) return;
+    updateUserMutation.mutate({ id: selectedUser.id, data });
+  };
+
+  const handleDelete = (user) => {
     Swal.fire({
-      title: "Delete Use Case",
-      text: `Are you sure you want to delete "${useCase.name}"? This action cannot be undone.`,
+      title: "Delete User",
+      text: `Are you sure you want to delete "${user.name}"? This action cannot be undone.`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
@@ -204,20 +145,14 @@ const RolePlayUseCases = () => {
       },
     }).then((result) => {
       if (result.isConfirmed) {
-        deleteUseCaseMutation.mutate(useCase.id);
+        deleteUserMutation.mutate(user.id);
       }
     });
   };
 
-  const handleCreateModalClose = () => {
-    setIsCreateModalOpen(false);
-    setSelectedUseCase(null);
-    reset();
-  };
-
-  const handleEditModalClose = () => {
+  const handleModalClose = () => {
     setIsEditModalOpen(false);
-    setSelectedUseCase(null);
+    setSelectedUser(null);
     reset();
   };
 
@@ -228,11 +163,19 @@ const RolePlayUseCases = () => {
       <Badge label="Inactive" className="bg-warning-500" />
     );
 
-  // Filtering
-  const filteredUseCases = useCases.filter((u) => {
-    const hay = `${u.name} ${u?.category?.name ?? ""}`.toLowerCase();
+  // Filter
+  const filteredUsers = (users || []).filter((u) => {
+    const hay = `${u.name ?? ""} ${u.email ?? ""}`.toLowerCase();
     return hay.includes(searchTerm.toLowerCase());
   });
+
+  const statusOptions = useMemo(
+    () => [
+      { value: "active", label: "Active" },
+      { value: "inactive", label: "Inactive" },
+    ],
+    []
+  );
 
   return (
     <div className="space-y-6">
@@ -240,29 +183,19 @@ const RolePlayUseCases = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-            Role Play Use Cases
+            Users
           </h1>
           <p className="mt-2 text-sm text-slate-700 dark:text-slate-400">
-            Manage role play use cases for your application
+            Manage application users
           </p>
-        </div>
-        <div className="mt-4 sm:mt-0">
-          <Button
-            text="Add New Use Case"
-            icon="heroicons-outline:plus"
-            className="btn-primary shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-            onClick={() => setIsCreateModalOpen(true)}
-          />
         </div>
       </div>
 
-      {/* Fetch errors */}
-      {(useCasesError || categoriesError) && (
+      {/* Error */}
+      {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
           <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline">
-            {useCasesError?.message || categoriesError?.message || "Failed to fetch data"}
-          </span>
+          <span className="block sm:inline"> {error.message || "Failed to fetch users"}</span>
         </div>
       )}
 
@@ -272,7 +205,7 @@ const RolePlayUseCases = () => {
           <div className="flex-1 max-w-md">
             <Textinput
               type="text"
-              placeholder="Search use cases or categories..."
+              placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               icon="heroicons-outline:search"
@@ -282,9 +215,8 @@ const RolePlayUseCases = () => {
             <div className="flex items-center space-x-1 px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full">
               <Icon icon="heroicons-outline:collection" className="h-4 w-4 text-slate-500" />
               <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                {filteredUseCases.length}
-                {searchTerm ? ` of ${useCases.length}` : ""} item
-                {filteredUseCases.length === 1 ? "" : "s"}
+                {filteredUsers.length}
+                {searchTerm ? ` of ${users.length}` : ""} user{filteredUsers.length === 1 ? "" : "s"}
               </span>
             </div>
             {searchTerm && (
@@ -299,15 +231,14 @@ const RolePlayUseCases = () => {
 
       {/* Table */}
       <Card>
-        {isUseCasesLoading ? (
+        {isLoading ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-100 table-fixed dark:divide-slate-700">
               <thead className="bg-slate-200 dark:bg-slate-700">
                 <tr>
                   <th className="table-th w-12">#</th>
                   <th className="table-th">Name</th>
-                  <th className="table-th">Category</th>
-                  <th className="table-th w-28">Time</th>
+                  <th className="table-th">Email</th>
                   <th className="table-th w-28">Status</th>
                   <th className="table-th w-32">Actions</th>
                 </tr>
@@ -325,9 +256,6 @@ const RolePlayUseCases = () => {
                       <div className="animate-pulse bg-slate-200 dark:bg-slate-600 h-4 rounded" />
                     </td>
                     <td className="table-td">
-                      <div className="animate-pulse bg-slate-200 dark:bg-slate-600 h-4 rounded w-16" />
-                    </td>
-                    <td className="table-td">
                       <div className="animate-pulse bg-slate-200 dark:bg-slate-600 h-6 w-16 rounded-full" />
                     </td>
                     <td className="table-td">
@@ -342,15 +270,11 @@ const RolePlayUseCases = () => {
               </tbody>
             </table>
           </div>
-        ) : !filteredUseCases || filteredUseCases.length === 0 ? (
+        ) : !filteredUsers || filteredUsers.length === 0 ? (
           <div className="text-center py-12">
-            <Icon icon="heroicons-outline:folder-open" className="mx-auto h-12 w-12 text-slate-400" />
-            <h3 className="mt-2 text-sm font-medium text-slate-900 dark:text-white">
-              No use cases found
-            </h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Get started by creating a new use case.
-            </p>
+            <Icon icon="heroicons-outline:users" className="mx-auto h-12 w-12 text-slate-400" />
+            <h3 className="mt-2 text-sm font-medium text-slate-900 dark:text-white">No users found</h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Try adjusting your search.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -359,15 +283,13 @@ const RolePlayUseCases = () => {
                 <tr>
                   <th className="table-th w-12">#</th>
                   <th className="table-th">Name</th>
-                  <th className="table-th">Category</th>
-                  <th className="table-th">Prompt</th>
-                  <th className="table-th w-28">Time</th>
+                  <th className="table-th">Email</th>
                   <th className="table-th w-28">Status</th>
                   <th className="table-th w-32">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-100 dark:bg-slate-800 dark:divide-slate-700">
-                {filteredUseCases.map((u, idx) => (
+                {filteredUsers.map((u, idx) => (
                   <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700">
                     <td className="table-td">
                       <span className="text-sm font-medium text-slate-900 dark:text-white">{idx + 1}</span>
@@ -376,13 +298,7 @@ const RolePlayUseCases = () => {
                       <span className="text-sm font-medium text-slate-900 dark:text-white">{u.name}</span>
                     </td>
                     <td className="table-td">
-                      <span className="text-sm text-slate-700 dark:text-slate-300">{u?.category?.name || "-"}</span>
-                    </td>
-                    <td className="table-td">
-                      <span className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">{u.prompt}</span>
-                    </td>
-                    <td className="table-td">
-                      <span className="text-sm text-slate-700 dark:text-slate-300">{u.time}</span>
+                      <span className="text-sm text-slate-700 dark:text-slate-300">{u.email}</span>
                     </td>
                     <td className="table-td">{getStatusBadge(u.status)}</td>
                     <td className="table-td">
@@ -394,7 +310,7 @@ const RolePlayUseCases = () => {
                             onClick={() => handleEdit(u)}
                           />
                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                            Edit Use Case
+                            Edit User
                           </div>
                         </div>
                         <div className="group relative">
@@ -418,7 +334,7 @@ const RolePlayUseCases = () => {
                             onClick={() => handleDelete(u)}
                           />
                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                            Delete Use Case
+                            Delete User
                           </div>
                         </div>
                       </div>
@@ -431,131 +347,54 @@ const RolePlayUseCases = () => {
         )}
       </Card>
 
-      {/* Create Use Case Modal */}
-      <Modal
-        activeModal={isCreateModalOpen}
-        onClose={handleCreateModalClose}
-        title="Create New Use Case"
-        className="max-w-2xl"
-      >
-        <form onSubmit={handleSubmit(onCreate)} className="space-y-4">
-          <Textinput
-            name="name"
-            label="Name"
-            placeholder="Enter use case name"
-            register={register}
-            error={formErrors.name}
-          />
-
-          <div className="fromGroup">
-            <label className="form-label">Category</label>
-            <Select
-              name="category_id"
-              register={register}
-              options={categoryOptions}
-              error={formErrors.category_id}
-              disabled={isCategoriesLoading}
-            />
-          </div>
-
-          <div className="fromGroup">
-            <label className="form-label">Prompt</label>
-            <Textarea
-              name="prompt"
-              register={register}
-              placeholder="Enter the system prompt/instructions"
-              rows={4}
-              error={formErrors.prompt}
-            />
-          </div>
-
-          <Textinput
-            name="time"
-            label="Time"
-            placeholder="e.g. 20 min"
-            register={register}
-            error={formErrors.time}
-          />
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button
-              text="Cancel"
-              className="btn-outline-secondary hover:bg-slate-50 transition-all duration-200"
-              onClick={handleCreateModalClose}
-              type="button"
-              disabled={createUseCaseMutation.isPending}
-            />
-            <Button
-              text="Create Use Case"
-              type="submit"
-              className="btn-primary shadow-md hover:shadow-lg transition-all duration-200"
-              isLoading={createUseCaseMutation.isPending}
-              disabled={createUseCaseMutation.isPending}
-            />
-          </div>
-        </form>
-      </Modal>
-
-      {/* Edit Use Case Modal */}
+      {/* Edit User Modal */}
       <Modal
         activeModal={isEditModalOpen}
-        onClose={handleEditModalClose}
-        title="Edit Use Case"
-        className="max-w-2xl"
+        onClose={handleModalClose}
+        title="Edit User"
+        className="max-w-lg"
       >
-        <form onSubmit={handleSubmit(onUpdate)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleUpdate)} className="space-y-4">
           <Textinput
             name="name"
             label="Name"
-            placeholder="Enter use case name"
+            placeholder="Enter full name"
             register={register}
             error={formErrors.name}
           />
 
-          <div className="fromGroup">
-            <label className="form-label">Category</label>
-            <Select
-              name="category_id"
-              register={register}
-              options={categoryOptions}
-              error={formErrors.category_id}
-              disabled={isCategoriesLoading}
-            />
-          </div>
-
-          <div className="fromGroup">
-            <label className="form-label">Prompt</label>
-            <Textarea
-              name="prompt"
-              register={register}
-              placeholder="Enter the system prompt/instructions"
-              rows={4}
-              error={formErrors.prompt}
-            />
-          </div>
-
           <Textinput
-            name="time"
-            label="Time"
-            placeholder="e.g. 20 min"
+            name="email"
+            label="Email"
+            placeholder="Enter email"
             register={register}
-            error={formErrors.time}
+            error={formErrors.email}
           />
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="fromGroup">
+            <label className="form-label">Status</label>
+            <Select
+              name="status"
+              register={register}
+              options={statusOptions}
+              error={formErrors.status}
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-2">
             <Button
               text="Cancel"
-              className="btn-outline-secondary hover:bg-slate-50 transition-all duration-200"
-              onClick={handleEditModalClose}
+              className="btn-outline-secondary"
+              onClick={handleModalClose}
               type="button"
-              disabled={updateUseCaseMutation.isPending}
+              disabled={updateUserMutation.isPending}
             />
             <Button
-              text="Update Use Case"
+              text="Update User"
               type="submit"
-              className="btn-primary shadow-md hover:shadow-lg transition-all duration-200"
-              isLoading={updateUseCaseMutation.isPending}
-              disabled={updateUseCaseMutation.isPending}
+              className="btn-primary"
+              isLoading={updateUserMutation.isPending}
+              disabled={updateUserMutation.isPending}
             />
           </div>
         </form>
@@ -564,4 +403,4 @@ const RolePlayUseCases = () => {
   );
 };
 
-export default RolePlayUseCases;
+export default Users;

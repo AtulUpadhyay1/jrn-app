@@ -11,9 +11,11 @@ import MobileLogo from "@/assets/images/logo/logo-c.svg";
 import MobileLogoWhite from "@/assets/images/logo/logo-c-white.svg";
 import JRNLogo from "@/assets/images/logo/jrn_logo.png";
 
-const SidebarLogo = ({ menuHover }) => {
+const SidebarLogo = ({ menuHover, collapsed: collapsedProp }) => {
   const [isDark] = useDarkMode();
   const [collapsed, setMenuCollapsed] = useSidebar();
+  // Use the prop if provided, otherwise use the hook value
+  const isCollapsed = collapsedProp !== undefined ? collapsedProp : collapsed;
   // semi dark
   const [isSemiDark] = useSemiDark();
   // skin
@@ -40,7 +42,7 @@ const SidebarLogo = ({ menuHover }) => {
             )}
           </div>
 
-          {/* {(!collapsed || menuHover) && (
+      {/* {(!isCollapsed || menuHover) && (
             <div>
               <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
                 JRN
@@ -50,12 +52,12 @@ const SidebarLogo = ({ menuHover }) => {
         </div>
       </Link>
 
-      {(!collapsed || menuHover) && (
+      {(!isCollapsed || menuHover) && (
         <div
           onClick={() => setMenuCollapsed(!collapsed)}
-          className={`h-4 w-4 border-[1.5px] border-slate-900 dark:border-slate-700 rounded-full transition-all duration-150
+          className={`h-4 w-4 border-[1.5px] border-slate-900 dark:border-slate-700 rounded-full transition-all duration-150 cursor-pointer hover:ring-2 hover:ring-slate-300
           ${
-            collapsed
+            isCollapsed
               ? ""
               : "ring-2 ring-inset ring-offset-4 ring-black-900 dark:ring-slate-400 bg-slate-900 dark:bg-slate-400 dark:ring-offset-slate-700"
           }

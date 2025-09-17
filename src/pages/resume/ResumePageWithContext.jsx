@@ -1,30 +1,33 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ResumePreview from './ResumePreview'; 
 import ResumePreviewTwo from './ResumePreviewTwo'; 
 import SummaryView from './SummaryView';
 import { Button } from '@headlessui/react';
 import ResumeScoreView from './ResumeScoreView';
 import useProfile from '@/hooks/useProfile';
-import { useResumeData } from '@/hooks/useResumeData';
+import { useResumeDataContext } from '@/contexts/ResumeDataContext';
 
-const ResumePage = () => {
+const ResumePageWithContext = () => {
   const [activeTab, setActiveTab] = useState("resume");
   const navigate = useNavigate();
 
-  // Use optimized resume data hook
+  // Use context for resume data
   const {
-    resumeData,
-    resumeScore,
+    data: resumeData,
+    score: resumeScore,
     isLoading,
     error,
     lastFetchTime,
-    fetchResumeData,
-    clearError,
-  } = useResumeData();
+    actions: { fetchResumeData, clearError }
+  } = useResumeDataContext();
 
   // Use profile hook
   const { data: profileData, isLoading: isProfileLoading, error: profileError } = useProfile();
+
+  // Auto-fetch on mount
+  useEffect(() => {
+    fetchResumeData();
+  }, [fetchResumeData]);
 
   // Handle refresh with user feedback
   const handleRefresh = useCallback(() => {
@@ -157,4 +160,4 @@ const ResumePage = () => {
   );
 };
 
-export default ResumePage;
+export default ResumePageWithContext;

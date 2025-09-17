@@ -42,6 +42,7 @@ const CoverLetter = () => {
 
   // If coverLetter is provided, populate the form with its data
   if (coverLetter) {
+    console.log("Editing cover letter:", coverLetter);
     setValue("name", coverLetter.name || "");
     setValue("description", coverLetter.description || "");
     setValue("company", coverLetter.company || "");
@@ -58,6 +59,7 @@ const CoverLetter = () => {
 
 
   useEffect(() => {
+    console.log("CoverLetter generated_response changed:", coverLetter?.generated_response);
     if (coverLetter?.generated_response) {
       try {
         const json = JSON.parse(coverLetter.generated_response);

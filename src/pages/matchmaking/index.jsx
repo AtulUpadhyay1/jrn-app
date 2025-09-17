@@ -271,13 +271,13 @@ const Matchmaking = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h6 className="text-3xl font-bold text-gray-900">Job Matching Dashboard</h6>
-          <p className="text-gray-600 mt-1">Find jobs that match your preferences and skills</p>
+          <h6 className="text-xl font-bold text-gray-900">Job Matching Dashboard</h6>
+          <p className="text-gray-600 mt-1 text-sm">Find jobs that match your preferences and skills</p>
         </div>
         <div className="flex gap-3">
           <Button
             onClick={() => navigate("/job-search")}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+            className="flex items-center gap-2  px-6 py-3 rounded-lg bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
           >
             <Icon icon="heroicons:plus-circle" className="w-5 h-5" />
             Create New Engine
@@ -291,16 +291,14 @@ const Matchmaking = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <Icon icon="heroicons:cog-6-tooth" className="w-6 h-6 text-indigo-600" />
+              <Icon icon="heroicons:cog-6-tooth" className="w-6 h-6 text-blue-600" />
               Your Job Search Engines
             </h2>
             <p className="text-sm text-gray-600 mt-1">Configure and manage your automated job search preferences</p>
           </div>
           <div className="text-right">
             <span className="text-sm text-gray-500">{engines.length} engines created</span>
-            <div className="text-xs text-gray-400 mt-1">
-              {engines.filter(e => e.isActive).length} active • {engines.filter(e => !e.isActive).length} inactive
-            </div>
+            
           </div>
         </div>
         
@@ -310,7 +308,7 @@ const Matchmaking = () => {
               key={engine.id}
               className={`p-5 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
                 selectedEngine.id === engine.id 
-                  ? 'border-indigo-500 bg-indigo-50 shadow-md' 
+                  ? 'border-blue-500 bg-blue-50 shadow-md' 
                   : 'border-gray-200 hover:border-gray-300 bg-white'
               }`}
               onClick={() => setSelectedEngine(engine)}
@@ -320,26 +318,7 @@ const Matchmaking = () => {
                   <h3 className="font-semibold text-gray-900 text-lg mb-1">{engine.keyword}</h3>
                   </div>
                 <div className="flex items-center gap-2 ml-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    engine.isActive 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {engine.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEngineToggle(engine.id);
-                    }}
-                    className={`p-1 rounded-full transition-colors ${
-                      engine.isActive 
-                        ? 'text-green-600 hover:bg-green-100' 
-                        : 'text-gray-400 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Icon icon={engine.isActive ? "heroicons:toggle-right" : "heroicons:toggle-left"} className="w-6 h-6" />
-                  </button>
+                  
                 </div>
               </div>
               
@@ -391,8 +370,7 @@ const Matchmaking = () => {
                 {/* Match Count */}
                 <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                   <div className="flex items-center gap-2">
-                    <Icon icon="heroicons:magnifying-glass" className="w-4 h-4 text-indigo-500" />
-                    <span className="text-sm font-medium text-gray-900">{engine.matchCount} matches found</span>
+                    <span className="text-sm font-medium text-gray-900">{engine.jobs?.results.length || 0} matches found</span>
                   </div>
                   <span className="text-xs text-gray-500">
                     Created {new Date(engine.created_at).toLocaleDateString()}
@@ -412,7 +390,7 @@ const Matchmaking = () => {
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                <Icon icon="material-symbols:work" className="w-6 h-6 text-indigo-600" />
+                <Icon icon="material-symbols:work" className="w-6 h-6 text-blue-600" />
                 Matched Jobs for "{selectedEngine.keyword}"
               </h2>
               <div className="flex items-center gap-4">
@@ -482,7 +460,7 @@ const Matchmaking = () => {
                                 href={job.job_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="font-semibold text-lg text-gray-900 hover:text-indigo-600 cursor-pointer transition-colors"
+                                className="font-semibold text-lg text-gray-900 hover:text-blue-600 cursor-pointer transition-colors"
                               >
                                 {job.title}
                               </a>
@@ -493,7 +471,7 @@ const Matchmaking = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-indigo-600 font-medium">
+                              <span className="text-blue-600 font-medium">
                                 {job.company}
                               </span>
                               {job.company_industry && (
@@ -566,7 +544,7 @@ const Matchmaking = () => {
                             href={job.job_url_direct || job.job_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                           >
                             <Icon icon="heroicons:arrow-top-right-on-square" className="w-4 h-4" />
                             Apply Now

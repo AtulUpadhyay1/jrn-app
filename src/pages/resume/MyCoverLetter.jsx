@@ -47,66 +47,88 @@ const MyCoverLetter = () => {
   return (
 
     <>
-    <div className="p-4 flex flex-row items-center">
+    <div className="p-6 flex flex-row items-center bg-white shadow rounded-lg mb-6">
       <div className="flex-1">
-        <h1 className="text-2xl font-bold mb-4">My Cover Letters</h1>
-        <p className="text-gray-600 mb-6">
+        <h1 className="text-3xl font-bold mb-2">My Cover Letters</h1>
+        <p className="text-gray-600">
             Manage your cover letters here. You can create, edit, or delete them as needed.
         </p>
       </div>
 
-     
-
       {/* Button to create a new cover letter */}
-      <Button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      <Button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
         onClick={() => {
           navigate("/cover-letter");
-          
         }}
       > 
+        <Icon icon="mdi:plus" className="w-4 h-4 mr-2" />
         Create New Cover Letter
       </Button>
     </div>
 
-     {/* Placeholder for cover letter list */}
-      <div className="bg-white shadow rounded-lg p-6">
-  {coverLetterList.length > 0 ? (
-    coverLetterList.map((coverLetter) => (
-      <div
-        key={coverLetter.id}
-        className="py-4 flex items-start justify-between"
-      >
-        {/* Cover Letter Details */}
-        <div>
-          <h2 className="text-lg font-semibold">{coverLetter.name || "Untitled"}</h2>
-          <p className="text-gray-600 text-sm">
-            {coverLetter.description || "No description available."}
-          </p>
-        </div>
+     {/* Cover Letter List */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        {coverLetterList.length > 0 ? (
+          <div className="divide-y divide-gray-100">
+            {coverLetterList.map((coverLetter) => (
+              <div
+                key={coverLetter.id}
+                className="p-4 flex items-start justify-between hover:bg-gray-50 transition-colors"
+              >
+                {/* Cover Letter Details */}
+                <div className="flex-1 mr-4">
+                  <h2 className="text-lg font-semibold mb-2">{coverLetter.name || "Untitled"}</h2>
+                  
+                  {/* Truncated Description with max 2 lines */}
+                  <p 
+                    className="text-gray-600 text-sm leading-relaxed mb-2"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {coverLetter.description || "No description available."}
+                  </p>
+                  
+                  {/* Created Date */}
+                  <p className="text-gray-400 text-xs">
+                    Created: {coverLetter.created_at ? new Date(coverLetter.created_at).toLocaleDateString() : 'Unknown'}
+                  </p>
+                </div>
 
-        {/* Action Buttons */}
-        <div className="flex space-x-2">
-          <Button
-            onClick={() => handleEditCoverLetter(coverLetter)}
-            className="p-1 hover:bg-gray-100 rounded-full"
-            title="Edit"
-          >
-            <Icon icon="mdi:eye" className="w-5 h-5 text-gray-600" />
-          </Button>
-          <Button
-            onClick={() => handleDeleteCoverLetter(coverLetter.id)}
-            className="p-1 hover:bg-gray-100 rounded-full"
-            title="Delete"
-          >
-            <Icon icon="mdi:delete" className="w-5 h-5 text-red-500" />
-          </Button>
-        </div>
+                {/* Action Buttons */}
+                <div className="flex space-x-2 flex-shrink-0">
+                  <Button
+                    onClick={() => handleEditCoverLetter(coverLetter)}
+                    className="flex items-center px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
+                    title="View Cover Letter"
+                  >
+                    <Icon icon="mdi:eye" className="w-4 h-4 mr-1" />
+                    View
+                  </Button>
+                  <Button
+                    onClick={() => handleDeleteCoverLetter(coverLetter.id)}
+                    className="flex items-center px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
+                    title="Delete Cover Letter"
+                  >
+                    <Icon icon="mdi:delete" className="w-4 h-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-8 text-center">
+            <Icon icon="mdi:file-document-outline" className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No cover letters created yet.</p>
+            <p className="text-gray-400 text-sm mt-2">Create your first cover letter to get started!</p>
+          </div>
+        )}
       </div>
-    ))
-  ) : (
-    <p className="text-gray-500">No cover letters created yet.</p>
-  )}
-</div>
 
     </>
 

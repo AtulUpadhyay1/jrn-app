@@ -13,6 +13,7 @@ const AdminLogin = lazy(() => import("./pages/admin/login"));
 const AdminDashboard = lazy(() => import("./pages/admin/dashboard"));
 const RolePlayCategory = lazy(() => import("./pages/admin/role-play/category"));
 const RolePlayUseCase = lazy(() => import("./pages/admin/role-play/use-cases"));
+const Users = lazy(() => import("./pages/admin/user"));
 
 import Layout from "./layout/Layout";
 import AuthLayout from "./layout/AuthLayout";
@@ -63,6 +64,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="role-play-categories" element={<RolePlayCategory />} />
           <Route path="role-play-use-cases" element={<RolePlayUseCase />} />
+          <Route path="users" element={<Users />} />
           <Route path="" element={<Navigate to="/admin/dashboard" />} />
         </Route>
 
