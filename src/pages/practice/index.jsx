@@ -104,6 +104,8 @@ const recommendations = [
 const Practice = () => {
     const [activeTab, setActiveTab] = useState('All Categories');
     const [isGrid, setIsGrid] = useState(true);
+
+
     return (
         <>
             <section className="p-6 bg-white">

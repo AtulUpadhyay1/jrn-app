@@ -114,10 +114,10 @@ const Social = () => {
             Manage and analyze your social media presence
           </p>
         </div>
-        <Button className="btn-primary">
+        {/* <Button className="btn-primary">
           <Icon icon="heroicons:plus" className="w-4 h-4 mr-2" />
           Connect Platform
-        </Button>
+        </Button> */}
       </div>
 
     

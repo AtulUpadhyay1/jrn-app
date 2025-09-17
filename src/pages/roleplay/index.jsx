@@ -9,6 +9,9 @@ const SessionCard = ({ title, subtitle, duration, difficulty, score, status, ico
     Locked: "bg-grey-50 opacity-60",
   };
 
+
+  
+
   return (
     <div className={`${baseClasses} ${statusColors[status]} ${locked ? 'opacity-60' : ''}`} onClick={onClick}>
       <div className="flex items-center justify-between mb-4">
@@ -125,6 +128,8 @@ const reportData = [
 const RoleplayPage = () => {
 
     const [filter, setFilter] = useState('desk');
+
+  
 
     return (
 

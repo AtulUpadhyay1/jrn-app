@@ -147,7 +147,7 @@ const Header = ({ className = "custom-class" }) => {
               </div>
             )}
             <div className="flex items-center space-x-4">
-              <div className="w-full max-w-sm">
+              {/* <div className="w-full max-w-sm">
                 <p className="text-sm font-semibold text-gray-800 mb-1">Your Progress</p>
                 <div className="flex items-center gap-2">
                   <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
@@ -155,7 +155,7 @@ const Header = ({ className = "custom-class" }) => {
                   </div>
                   <p className="text-sm text-gray-700">78/100</p>
                 </div>
-              </div>
+              </div> */}
 
 
               {/* Bell Icon with Pulse */}

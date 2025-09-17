@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import Button from "@/components/ui/Button";
 import { useEffect } from "react";
 import { jobService } from "../../services/jobEngine";
+import { toast } from "react-toastify";
 
 
 const Matchmaking = () => {
@@ -38,6 +39,7 @@ const Matchmaking = () => {
 
   // change engines status from api
   const changeEngineStatus = async (engineId, isActive) => {
+    toast.info("Please Reload Page After 2-3 Min...");
     const result = await jobService.updateEngineStatus(engineId, isActive);
     if (result.success) {
       setEngines((prevEngines) =>
@@ -247,6 +249,7 @@ const Matchmaking = () => {
 
   const [selectedEngine, setSelectedEngine] = useState(null);
   const [filter, setFilter] = useState("all"); // all, applied, notInterested
+  const [toggleLoadingEngines, setToggleLoadingEngines] = useState(new Set()); // Track which engines are being toggled
 
   // Set first engine as selected when engines are available
   useEffect(() => {
@@ -255,15 +258,29 @@ const Matchmaking = () => {
     }
   }, [engines, selectedEngine]);
 
-  const handleEngineToggle = (engineId) => {
-    // Make the clicked engine active, others inactive
-    setEngines((prev) =>
-      prev.map((engine) => ({ ...engine, isActive: engine.id === engineId }))
-    );
-    const engine = engines.find((e) => e.id === engineId);
-    // If it was already active, do nothing; otherwise, activate via API
-    if (!engine?.isActive) {
-      changeEngineStatus(engineId, true);
+  const handleEngineToggle = async (engineId) => {
+    // Add engine to loading set
+    setToggleLoadingEngines(prev => new Set([...prev, engineId]));
+    
+    try {
+      // Make the clicked engine active, others inactive
+      setEngines((prev) =>
+        prev.map((engine) => ({ ...engine, isActive: engine.id === engineId }))
+      );
+      const engine = engines.find((e) => e.id === engineId);
+      // If it was already active, do nothing; otherwise, activate via API
+      if (!engine?.status || engine.status !== "active") {
+        await changeEngineStatus(engineId, true);
+      }
+    } catch (error) {
+      console.error("Error toggling engine:", error);
+    } finally {
+      // Remove engine from loading set
+      setToggleLoadingEngines(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(engineId);
+        return newSet;
+      });
     }
   };
 
@@ -321,10 +338,14 @@ const Matchmaking = () => {
                 <div className="flex items-center gap-2 ml-3">
                   
 
-                  {engine.isActive ? (
+                  {engine.status=="active" ? (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
                       Active
                     </span>
+                  ) : toggleLoadingEngines.has(engine.id) ? (
+                    <div className="flex items-center justify-center px-2.5 py-1 rounded bg-blue-100">
+                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
                   ) : (
                     <Button
                       onClick={() => handleEngineToggle(engine.id)}
