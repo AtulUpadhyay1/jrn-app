@@ -3,7 +3,7 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 export const axiosInstance = axios.create({
-  baseURL: "/api/", // Using proxy - Vite will forward to http://localhost:8000
+  baseURL: "https://api.jobreadynowai.com/api/",
   timeout: 30000, // Increased to 30 seconds
   headers: {
     "Content-Type": "application/json",
@@ -88,7 +88,7 @@ axiosInstance.interceptors.response.use(
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: "/api/", // Using proxy - Vite will forward to http://localhost:8000
+    baseUrl: "https://api.jobreadynowai.com/api/",
     prepareHeaders: (headers, { getState }) => {
       const token = localStorage.getItem("access_token");
       if (token) {
