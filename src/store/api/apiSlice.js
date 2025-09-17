@@ -88,7 +88,7 @@ axiosInstance.interceptors.response.use(
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: "/api/", // Using proxy - Vite will forward to http://localhost:8000
+    baseUrl: "https://api.jobreadynowai.com/api/",
     prepareHeaders: (headers, { getState }) => {
       const token = localStorage.getItem("access_token");
       if (token) {
