@@ -120,7 +120,9 @@ const Sidebar = () => {
 
       </div>
       <p className="text-xs text-grey-600 mb-2">Share your profile</p>
-      <button className="text-xs text-grey-600 hover:text-white hover:bg-grey-500 px-2 py-1 rounded transition-all">
+      <button className="text-xs text-grey-600 hover:text-white hover:bg-grey-500 px-2 py-1 rounded transition-all"
+        onClick={() => window.location.href = '/dashboard/qr'}
+      >
         Generate QR
       </button>
     </div>

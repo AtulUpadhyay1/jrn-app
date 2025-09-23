@@ -39,6 +39,9 @@ const JobSearchForm = lazy(() => import("./pages/matchmaking/job-form"));
 const LinkedInProfile = lazy(() => import("./pages/social/components/LinkedInProfile"));
 const InstagramProfile = lazy(() => import("./pages/social/components/InstagramProfile"));
 const GitHubProfile = lazy(() => import("./pages/social/components/GitHubProfile"));
+const QRCodePage = lazy(() => import("./pages/qr"));
+const InterviewPlatform = lazy(() => import("./pages/interview"));
+
 
 import Loading from "@/components/Loading";
 
@@ -78,13 +81,18 @@ function App() {
         {/* Regular App Routes */}
         <Route path="/*" element={<Layout />}>
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard/qr" element={<QRCodePage />} />
           
           <Route path="profile-setup" element={<ProfileSetup />} />
           <Route path="multistep-form-demo" element={<MultiStepFormDemo />} />
 
           {/* // JRN Pages */}
           <Route path="roleplay" element={<RoleplayPage />} />
+
+
           <Route path="practice" element={<PracticePage />} />
+          <Route path="practice/interview" element={<InterviewPlatform />} />
+          
           <Route path="social" element={<SocialPage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="matchmaking" element={<Matchmaking />} />

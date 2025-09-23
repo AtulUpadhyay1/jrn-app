@@ -1,5 +1,6 @@
 import { Icon } from '@iconify/react/dist/iconify.js';
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
+import userSkillService from "@/services/userSkillService";
 
 
 const categories = [
@@ -105,6 +106,33 @@ const Practice = () => {
     const [activeTab, setActiveTab] = useState('All Categories');
     const [isGrid, setIsGrid] = useState(true);
 
+    const [categories, setCategories] = useState([]);
+    const [useCases, setUseCases] = useState([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const categories = await userSkillService.getRolePlayCategories();
+            const useCases = await userSkillService.getRolePlayUseCases();
+            const categoriesData = categories["data"] || [];
+            setCategories(categoriesData);
+            setUseCases(useCases["data"] || []);
+            
+            // Set first category as selected by default
+            if (categoriesData.length > 0) {
+                setSelectedCategoryId(categoriesData[0].id);
+            }
+        };
+        fetchData();
+    }, []);
+
+    // Filter use cases based on selected category
+    const filteredUseCases = useCases.filter(useCase => useCase.category_id === selectedCategoryId);
+
+    const handleCategoryChange = (categoryId) => {
+        setSelectedCategoryId(categoryId);
+    };
+
 
     return (
         <>
@@ -150,80 +178,96 @@ const Practice = () => {
                 </div>
             </section>
 
-            <section className="p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Categories</h2>
+            <section className="p-6 bg-gray-50 border-b border-gray-200">
+          <div className="max-w-7xl mx-auto">
+            {/* Categories Tabs */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Practice By Categories</h2>
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => handleCategoryChange(category.id)}
+                      className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                        selectedCategoryId === category.id
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
 
-                {/* Tabs and View Toggle */}
-                <div className="flex flex-wrap items-center justify-between mb-6">
-                    <div className="flex flex-wrap gap-2">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-2 rounded-full text-sm font-medium ${activeTab === tab
-                                        ? 'bg-gray-700 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* View toggle */}
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setIsGrid(false)}
-                            className={`p-2 rounded ${!isGrid ? 'bg-gray-700 text-white' : 'text-gray-500'}`}
-                        >
-                            <Icon icon='heroicons-outline:view-list' />
-                        </button>
-                        <button
-                            onClick={() => setIsGrid(true)}
-                            className={`p-2 rounded ${isGrid ? 'bg-gray-700 text-white' : 'text-gray-500'}`}
-                        >
-                            <Icon icon='heroicons-outline:view-grid' />
-                        </button>
-                    </div>
+            {/* Use Cases Grid */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Use Cases {selectedCategoryId && `for ${categories.find(c => c.id === selectedCategoryId)?.name}`}
+              </h3>
+              {filteredUseCases.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Icon icon="heroicons-outline:folder-open" className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No use cases found</h4>
+                  <p className="text-gray-500">No use cases available for this category yet.</p>
                 </div>
-
-                {/* Cards */}
-                <div className={`${isGrid ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'flex flex-col gap-4'}`}>
-                    {categories.map((item, index) => (
-                        <div
-                            key={index}
-                            className={`border ${item.color} rounded-lg shadow-sm p-4 bg-white flex ${isGrid ? 'flex-row' : 'flex-row'
-                                } items-start`} // always row layout
-                        >
-                            <div
-                                className={`w-12 h-12 ${item.bgColor} flex items-center justify-center rounded-full text-xl ${isGrid ? 'mr-4' : 'mr-4'
-                                    }`}
-                            >
-                                {item.icon}
-                            </div>
-
-                            <div className="flex-1">
-                                <h6 className="font-semibold text-gray-800">{item.title}</h6>
-                                <p className="text-sm text-gray-500 mb-1">{item.subtitle}</p>
-                                <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-
-                                <div className="flex items-center justify-between text-xs text-gray-500">
-                                    <span className="flex items-center gap-1">
-                                        <Icon icon="heroicons-outline:clock" /> {item.time}
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                        <Icon icon="heroicons-outline:star" /> {item.level}
-                                    </span>
-                                    <button className="bg-gray-700 text-white text-xs px-3 py-1 rounded">
-                                        Start Practice
-                                    </button>
-                                </div>
-                            </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredUseCases.map((useCase) => (
+                    <div key={useCase.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                      <div className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h4 className="text-lg font-semibold text-gray-900 mb-2">{useCase.name}</h4>
+                            <p className="text-sm text-gray-600 line-clamp-3">{useCase.prompt}</p>
+                          </div>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-3 ${
+                            useCase.status === 'active' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {useCase.status}
+                          </span>
                         </div>
-
-                    ))}
+                        
+                        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                          <div className="flex items-center">
+                            <Icon icon="heroicons-outline:clock" className="w-4 h-4 mr-1" />
+                            <span>{useCase.time} minutes</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Icon icon="heroicons-outline:video-camera" className="w-4 h-4 mr-1" />
+                            <span className="capitalize">{useCase.use_case_type}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                          <span className="text-xs text-gray-500">
+                            Created {new Date(useCase.created_at).toLocaleDateString()}
+                          </span>
+                          <button 
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors duration-200 flex items-center"
+                            onClick={() => {/* Handle use case click */}}
+                          >
+                            <Icon icon="heroicons-outline:play" className="w-4 h-4 mr-1" />
+                            Start
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-            </section>
+              )}
+            </div>
+          </div>
+        </section>
+
+
+        
 
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-6">
@@ -308,7 +352,7 @@ const Practice = () => {
                         </div>
                     </div>
 
-                    <div className="bg-gray-800 shadow rounded p-4 text-white">
+                    {/* <div className="bg-gray-800 shadow rounded p-4 text-white">
                         <h6 className="font-semibold mb-3 text-white">Quick Actions</h6>
                         <button className="w-full text-left mb-2 flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded">
                             <Icon icon="carbon:play-filled" /> Continue Incomplete Session
@@ -319,9 +363,9 @@ const Practice = () => {
                         <button className="w-full text-left flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded">
                             <Icon icon="carbon:star-filled" /> Start Recommended
                         </button>
-                    </div>
+                    </div> */}
 
-                    <div className="bg-white shadow rounded p-4">
+                    {/* <div className="bg-white shadow rounded p-4">
                         <h6 className="font-semibold mb-2 text-orange-500">Learning Streak</h6>
                         <div className="text-xl font-bold text-orange-600">7 Days</div>
                         <p className="text-sm text-gray-600">Keep practicing to maintain your streak!</p>
@@ -331,7 +375,7 @@ const Practice = () => {
                             ))}
                         </div>
                         <p className="text-xs mt-1 text-gray-500">Next milestone: 10 days</p>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 

@@ -19,7 +19,8 @@ import { userService } from "@/services/userService";
 // Minimal validation for edit form (adjust fields as your API supports)
 const userSchema = yup
   .object({
-    name: yup.string().required("Name is required").min(2).max(100),
+    first_name: yup.string().required("First name is required").min(2).max(50),
+    last_name: yup.string().required("Last name is required").min(2).max(50),
     email: yup.string().email("Invalid email").required("Email is required"),
     status: yup.string().oneOf(["active", "inactive"]).required(),
   })
@@ -56,7 +57,8 @@ const Users = () => {
     resolver: yupResolver(userSchema),
     mode: "all",
     defaultValues: {
-      name: "",
+      first_name: "",
+      last_name: "",
       email: "",
       status: "active",
     },
@@ -113,7 +115,8 @@ const Users = () => {
   // Handlers
   const handleEdit = (user) => {
     setSelectedUser(user);
-    setValue("name", user.name || "");
+    setValue("first_name", user.first_name || "");
+    setValue("last_name", user.last_name || "");
     setValue("email", user.email || "");
     setValue("status", user.status || "active");
     setIsEditModalOpen(true);
@@ -125,9 +128,10 @@ const Users = () => {
   };
 
   const handleDelete = (user) => {
+    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'this user';
     Swal.fire({
       title: "Delete User",
-      text: `Are you sure you want to delete "${user.name}"? This action cannot be undone.`,
+      text: `Are you sure you want to delete "${fullName}"? This action cannot be undone.`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
@@ -165,7 +169,8 @@ const Users = () => {
 
   // Filter
   const filteredUsers = (users || []).filter((u) => {
-    const hay = `${u.name ?? ""} ${u.email ?? ""}`.toLowerCase();
+    const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim();
+    const hay = `${fullName} ${u.email ?? ""}`.toLowerCase();
     return hay.includes(searchTerm.toLowerCase());
   });
 
@@ -295,7 +300,9 @@ const Users = () => {
                       <span className="text-sm font-medium text-slate-900 dark:text-white">{idx + 1}</span>
                     </td>
                     <td className="table-td">
-                      <span className="text-sm font-medium text-slate-900 dark:text-white">{u.name}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">
+                        {`${u.first_name || ''} ${u.last_name || ''}`.trim() || 'N/A'}
+                      </span>
                     </td>
                     <td className="table-td">
                       <span className="text-sm text-slate-700 dark:text-slate-300">{u.email}</span>
@@ -355,13 +362,22 @@ const Users = () => {
         className="max-w-lg"
       >
         <form onSubmit={handleSubmit(handleUpdate)} className="space-y-4">
-          <Textinput
-            name="name"
-            label="Name"
-            placeholder="Enter full name"
-            register={register}
-            error={formErrors.name}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Textinput
+              name="first_name"
+              label="First Name"
+              placeholder="Enter first name"
+              register={register}
+              error={formErrors.first_name}
+            />
+            <Textinput
+              name="last_name"
+              label="Last Name"
+              placeholder="Enter last name"
+              register={register}
+              error={formErrors.last_name}
+            />
+          </div>
 
           <Textinput
             name="email"

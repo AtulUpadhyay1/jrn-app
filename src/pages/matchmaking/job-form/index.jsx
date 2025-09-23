@@ -80,7 +80,10 @@ const JobSearchForm = () => {
             if (result.success) {
               toast.success("Job search engine created successfully!");
                 // Optionally reset the form or navigate to results page
+            
                 reset();
+                //navigate back to listing page
+                navigate('/matchmaking');
             } else {
               console.error("Failed to fetch engine:", result.message);
       }
@@ -239,7 +242,7 @@ const JobSearchForm = () => {
                 disabled={loading}
               >
                 <Icon
-                  icon="heroicons-outline:cog-6-tooth"
+                  icon="heroicons-outline:add"
                   className="w-4 h-4 mr-2"
                 />
                 Create Engine

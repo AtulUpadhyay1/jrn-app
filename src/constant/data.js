@@ -13,12 +13,12 @@ export const menuItems = [
     isHeadr: true,
     title: "Upskilling",
   },
-  {
-    title: "Roleplay",
-    isHide: true,
-    icon: "heroicons-outline:user-group",
-    link: "roleplay",
-  },
+  // {
+  //   title: "Roleplay",
+  //   isHide: true,
+  //   icon: "heroicons-outline:user-group",
+  //   link: "roleplay",
+  // },
   {
     title: "Practice",
     isHide: true,

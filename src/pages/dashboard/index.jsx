@@ -2,13 +2,30 @@ import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Chart from "chart.js/auto";
 import { axiosInstance } from "@/store/api/apiSlice";
+import useDashboard from "../../hooks/useDashboard";
+import useProfile from "../../hooks/useProfile";
 
 const Dashboard = () => {
   const [filterMap, setFilterMap] = useState("usa");
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const chartRef = useRef(null);
+
+  // Use hooks for data fetching
+  const { 
+    data: profile, 
+    isLoading: profileLoading, 
+    error: profileError,
+    refetch: refetchProfile 
+  } = useProfile();
+  
+  const { 
+    data: dashboardData, 
+    isLoading: dashboardLoading, 
+    error: dashboardError 
+  } = useDashboard();
+
+  // Combined loading and error states
+  const isLoading = profileLoading || dashboardLoading;
+  const error = profileError || dashboardError;
 
   // Resume parsing service function
   const parseResume = async (resumeUrl) => {
@@ -25,58 +42,33 @@ const Dashboard = () => {
     }
   };
 
-  // Profile service function
-  const getProfile = async () => {
-    try {
-      console.log("📡 Fetching profile data...");
-      setIsLoading(true);
-      setError(null);
-      
-      const response = await axiosInstance.get("/profile");
-      console.log("✅ getProfile successful:", response.data);
-      
-      const profileData = response.data;
-      
-      // Check if resume_parsed is null and resume URL exists
-      if (profileData?.user_detail?.resume_parsed === null && profileData?.user_detail?.resume) {
+  // Check and trigger resume parsing if needed
+  useEffect(() => {
+    const checkAndParseResume = async () => {
+      if (profile?.user_detail?.resume_parsed === null && profile?.user_detail?.resume) {
         console.log("🔍 Resume not parsed yet, initiating parsing...");
         try {
-          await parseResume(profileData.user_detail.resume);
+          await parseResume(profile.user_detail.resume);
           console.log("✅ Resume parsing initiated successfully");
+          // Refetch profile to get updated data
+          refetchProfile();
         } catch (parseError) {
-          console.warn("⚠️ Resume parsing failed, but continuing with profile data:", parseError);
+          console.warn("⚠️ Resume parsing failed:", parseError);
         }
       }
-      
-      setProfile(profileData);
-      return profileData;
-    } catch (error) {
-      console.error("❌ getProfile failed:", error);
+    };
 
-      let message = "Something went wrong";
-      if (error.response) {
-        console.error("Response status:", error.response.status);
-        console.error("Response data:", error.response.data);
-        message = error.response.data?.message || `Error ${error.response.status}`;
-      } else if (error.request) {
-        message = "No response from server";
-      } else {
-        message = error.message;
-      }
-
-      setError(message);
-      throw new Error(message);
-    } finally {
-      setIsLoading(false);
+    if (profile) {
+      checkAndParseResume();
     }
-  };
+  }, [profile, refetchProfile]);
 
-  // Fetch profile data on component mount
+  // Log dashboard data when available (for debugging/development)
   useEffect(() => {
-    getProfile().catch((err) => {
-      console.error("Failed to fetch profile:", err);
-    });
-  }, []);
+    if (dashboardData) {
+      console.log("📊 Dashboard data loaded:", dashboardData);
+    }
+  }, [dashboardData]);
 
   useEffect(() => {
     const ctx = document.getElementById("scoreChart");
@@ -142,9 +134,9 @@ const Dashboard = () => {
         <div className="bg-red-50 rounded-lg shadow-md p-6 mb-6">
           <div className="flex items-center">
             <Icon icon="heroicons-solid:exclamation-triangle" className="h-5 w-5 text-red-600 mr-2" />
-            <p className="text-red-600">Failed to load profile: {error}</p>
+            <p className="text-red-600">Failed to load data: {error?.message || error}</p>
             <button 
-              onClick={() => getProfile()}
+              onClick={() => refetchProfile()}
               className="ml-auto bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 transition-all"
             >
               Retry
@@ -179,7 +171,57 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Dashboard Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* Job Count Card */}
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Job Applications</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {dashboardData?.job_count || 0}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">Applications submitted</p>
+            </div>
+            <div className="bg-blue-100 p-3 rounded-full">
+              <Icon icon="heroicons-outline:briefcase" className="h-8 w-8 text-blue-600" />
+            </div>
+          </div>
+        </div>
 
+        {/* Resume Score Card */}
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Resume Score</p>
+              <p className="text-3xl font-bold text-green-600">
+                {dashboardData?.resume_score || 0}
+                <span className="text-lg text-gray-500">/100</span>
+              </p>
+              <p className="text-sm text-gray-500 mt-1">AI-driven analysis</p>
+            </div>
+            <div className="bg-green-100 p-3 rounded-full">
+              <Icon icon="heroicons-outline:document-text" className="h-8 w-8 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Social Profiles Card */}
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Social Profiles</p>
+              <p className="text-3xl font-bold text-purple-600">
+                {dashboardData?.social_profiles || 0}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">Connected profiles</p>
+            </div>
+            <div className="bg-purple-100 p-3 rounded-full">
+              <Icon icon="heroicons-outline:user-group" className="h-8 w-8 text-purple-600" />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
