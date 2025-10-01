@@ -1,0 +1,1480 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Icon } from '@iconify/react/dist/iconify.js';
+import { toast } from 'react-toastify';
+import '../../assets/css/practice.css';
+
+// Practice Questions Data
+const practiceQuestions = [
+  "Tell me about yourself and your professional background.",
+  "What are your greatest strengths and how do they apply to this role?",
+  "Describe a challenging project you've worked on and how you overcame obstacles.",
+  "Where do you see yourself in 5 years?",
+  "Why are you interested in this position and our company?",
+  "Tell me about a time you had to work with a difficult team member.",
+  "How do you handle pressure and tight deadlines?",
+  "What motivates you in your work?",
+  "Describe your leadership style with an example.",
+  "Do you have any questions for us?"
+];
+
+const StartPractice = () => {
+  // States
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [messages, setMessages] = useState([]);
+  const [currentAnswer, setCurrentAnswer] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [sessionData, setSessionData] = useState([]);
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [isSessionCompleted, setIsSessionCompleted] = useState(false);
+  const [showEndSessionModal, setShowEndSessionModal] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [showCameraOffModal, setShowCameraOffModal] = useState(false);
+  const [showChatPopup, setShowChatPopup] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
+
+  // Refs
+  const videoRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const speechRecognitionRef = useRef(null);
+  const streamRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
+  // Initialize camera and speech recognition
+  useEffect(() => {
+    // Detect Safari for specific handling
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari) {
+      console.log('Safari detected - using enhanced camera management');
+      toast.info('Safari detected: Enhanced camera privacy controls enabled');
+    }
+    
+    initializeCamera();
+    initializeSpeechRecognition();
+    
+    // Enhanced cleanup on page unload/reload
+    const handleBeforeUnload = (event) => {
+      console.log('Page unload detected - cleaning up camera resources');
+      cleanup();
+      // Small delay to ensure cleanup completes
+      const start = Date.now();
+      while (Date.now() - start < 100) {
+        // Synchronous delay to ensure cleanup
+      }
+    };
+    
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        console.log('Page hidden - releasing camera resources');
+        cleanup();
+      }
+    };
+    
+    // Add event listeners for page unload and visibility change
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      // Remove event listeners
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Perform cleanup
+      cleanup();
+    };
+  }, []);
+
+  // Initialize camera stream
+  const initializeCamera = async () => {
+    try {
+      // For Safari, be more explicit about constraints
+      const constraints = {
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true
+        }
+      };
+      
+      console.log('Requesting camera access with constraints:', constraints);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        
+        // For Safari, ensure video starts playing
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch(e => console.log('Video play failed:', e));
+        };
+        
+        console.log('Camera initialized successfully');
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast.error('Failed to access camera. Please check permissions.');
+    }
+  };
+
+  // Initialize speech recognition
+  const initializeSpeechRecognition = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      speechRecognitionRef.current = new SpeechRecognition();
+      
+      speechRecognitionRef.current.continuous = true;
+      speechRecognitionRef.current.interimResults = true;
+      speechRecognitionRef.current.lang = 'en-US';
+
+      speechRecognitionRef.current.onresult = (event) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        // Only append final transcript to avoid overwriting
+        if (finalTranscript) {
+          setCurrentAnswer(prev => prev + finalTranscript);
+        }
+        
+        // Show interim results separately
+        setInterimTranscript(interimTranscript);
+      };
+
+      speechRecognitionRef.current.onstart = () => {
+        setIsListening(true);
+        setInterimTranscript('');
+      };
+
+      speechRecognitionRef.current.onend = () => {
+        setIsListening(false);
+        setInterimTranscript('');
+      };
+
+      speechRecognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        setInterimTranscript('');
+        
+        let errorMessage = 'Speech recognition failed. Please try again.';
+        switch(event.error) {
+          case 'network':
+            errorMessage = 'Network error occurred. Please check your connection.';
+            break;
+          case 'not-allowed':
+            errorMessage = 'Microphone access denied. Please allow microphone permissions.';
+            break;
+          case 'no-speech':
+            errorMessage = 'No speech detected. Please try speaking again.';
+            break;
+        }
+        toast.error(errorMessage);
+      };
+    } else {
+      console.warn('Speech recognition not supported in this browser');
+      toast.warning('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
+    }
+  };
+
+  // Toggle camera on/off
+  const toggleCamera = () => {
+    if (!isCameraOn) {
+      // Turn camera back on
+      turnCameraOn();
+    } else {
+      // Turn camera off - show confirmation if recording
+      if (isRecording) {
+        setShowCameraOffModal(true);
+      } else {
+        turnCameraOff();
+      }
+    }
+  };
+
+  // Turn camera on
+  const turnCameraOn = async () => {
+    try {
+      // First ensure any existing stream is properly cleaned up
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      // Request new camera stream
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+        audio: true
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setIsCameraOn(true);
+        toast.success('Camera turned on');
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast.error('Failed to access camera. Please check permissions.');
+    }
+  };
+
+  // Turn camera off - Aggressive approach for Safari/macOS
+  const turnCameraOff = () => {
+    console.log('Starting aggressive camera shutdown...');
+    
+    // Step 1: Stop MediaRecorder immediately and aggressively
+    if (mediaRecorderRef.current) {
+      try {
+        console.log('MediaRecorder state:', mediaRecorderRef.current.state);
+        if (mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.pause();
+          mediaRecorderRef.current.stop();
+        } else if (mediaRecorderRef.current.state === 'paused') {
+          mediaRecorderRef.current.stop();
+        }
+        mediaRecorderRef.current = null;
+        setIsRecording(false);
+        setIsPaused(false);
+        console.log('MediaRecorder forcefully stopped and cleared');
+      } catch (error) {
+        console.error('Error stopping MediaRecorder:', error);
+      }
+    }
+    
+    // Step 2: Aggressively stop all stream tracks
+    if (streamRef.current) {
+      const tracks = streamRef.current.getTracks();
+      console.log('Found tracks to stop:', tracks.length);
+      
+      tracks.forEach((track, index) => {
+        console.log(`Stopping track ${index + 1}:`, track.kind, track.label, 'State:', track.readyState);
+        try {
+          track.stop();
+          console.log(`Track ${index + 1} stopped, new state:`, track.readyState);
+        } catch (error) {
+          console.error(`Error stopping track ${index + 1}:`, error);
+        }
+      });
+    }
+    
+    // Step 3: Clear video element completely
+    if (videoRef.current) {
+      try {
+        console.log('Clearing video element...');
+        videoRef.current.pause();
+        videoRef.current.srcObject = null;
+        videoRef.current.src = "";
+        videoRef.current.load();
+        console.log('Video element cleared');
+      } catch (error) {
+        console.error('Error clearing video element:', error);
+      }
+    }
+    
+    // Step 4: Clear stream reference and force cleanup
+    streamRef.current = null;
+    setIsCameraOn(false);
+    
+    // Step 5: Clear any potential WebRTC connections
+    if (window.RTCPeerConnection) {
+      // Clear any potential peer connections that might hold camera references
+      console.log('Clearing potential WebRTC connections...');
+    }
+    
+    // Step 6: Force garbage collection hint (doesn't guarantee but helps)
+    if (window.gc) {
+      window.gc();
+    }
+    
+    // Step 7: Verify camera release after a delay
+    setTimeout(async () => {
+      try {
+        console.log('Verifying camera release...');
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        console.log('Available video devices after shutdown:', videoDevices.length);
+        
+        // Try to briefly access camera to confirm it's released
+        const testStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 320, height: 240 } 
+        });
+        
+        // Immediately stop the test stream
+        testStream.getTracks().forEach(track => track.stop());
+        console.log('Camera verification: Successfully accessed and released camera');
+        toast.success('Camera completely released - hardware light should be off');
+        
+      } catch (error) {
+        console.log('Camera verification failed:', error.message);
+        if (error.name === 'NotAllowedError') {
+          toast.warning('Camera access denied - this might indicate camera is still in use');
+        } else {
+          toast.info('Camera release verification completed');
+        }
+      }
+    }, 2000);
+    
+    toast.info('Camera shutdown initiated - checking hardware light...');
+  };
+
+  // Handle camera off with recording confirmation
+  const handleCameraOffWithRecording = (stopRecording = false) => {
+    if (stopRecording && isRecording) {
+      // Stop recording first and clean up MediaRecorder
+      if (mediaRecorderRef.current) {
+        console.log('Force stopping MediaRecorder for camera shutdown');
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        mediaRecorderRef.current = null;
+        setIsRecording(false);
+        setIsPaused(false);
+      }
+      toast.info('Recording stopped for camera shutdown');
+    }
+    
+    // Turn off camera with complete cleanup
+    turnCameraOff();
+    setShowCameraOffModal(false);
+  };
+
+  // Start recording session
+  const startRecording = () => {
+    if (!streamRef.current) {
+      toast.error('No camera stream available. Please turn on camera first.');
+      return;
+    }
+
+    try {
+      // Clear any previous recording data
+      recordedChunksRef.current = [];
+      
+      // Find the best supported MIME type
+      let mimeType = 'video/webm;codecs=vp9,opus';
+      const supportedTypes = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus', 
+        'video/webm;codecs=h264,opus',
+        'video/webm',
+        'video/mp4;codecs=h264,aac',
+        'video/mp4'
+      ];
+      
+      for (const type of supportedTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          break;
+        }
+      }
+      
+      console.log('Using MIME type:', mimeType);
+      
+      const mediaRecorder = new MediaRecorder(streamRef.current, { 
+        mimeType,
+        videoBitsPerSecond: 1000000, // 1Mbps
+        audioBitsPerSecond: 128000   // 128kbps
+      });
+      
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        console.log('Data available:', event.data.size, 'bytes');
+        if (event.data && event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+          console.log('Total chunks collected:', recordedChunksRef.current.length);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        console.log('MediaRecorder stopped. Final chunk count:', recordedChunksRef.current.length);
+        
+        // Request final data if available
+        if (mediaRecorder.state === 'inactive' && recordedChunksRef.current.length === 0) {
+          console.warn('No data chunks were recorded during the session');
+          toast.warning('Recording completed but no video data was captured');
+        } else {
+          console.log('Recording stopped successfully with', recordedChunksRef.current.length, 'chunks');
+        }
+      };
+
+      mediaRecorder.onstart = () => {
+        console.log('MediaRecorder started successfully');
+        toast.success('Recording started! Answer the first question.');
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event.error);
+        toast.error('Recording error occurred: ' + event.error);
+      };
+
+      // Start recording with smaller timeslices for better data capture
+      mediaRecorder.start(500); // Capture data every 500ms
+      setIsRecording(true);
+      setSessionStartTime(new Date());
+      setHasStarted(true);
+      
+      // Add first question to messages
+      setMessages([{ 
+        type: 'question', 
+        content: practiceQuestions[0], 
+        timestamp: 0,
+        questionIndex: 0
+      }]);
+
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast.error('Failed to start recording: ' + error.message);
+    }
+  };
+
+  // Pause/Resume recording
+  const togglePause = () => {
+    if (mediaRecorderRef.current) {
+      if (isPaused) {
+        mediaRecorderRef.current.resume();
+        setIsPaused(false);
+        toast.info('Recording resumed');
+      } else {
+        mediaRecorderRef.current.pause();
+        setIsPaused(true);
+        toast.info('Recording paused');
+      }
+    }
+  };
+
+  // Stop recording
+  const stopRecording = () => {
+    return new Promise((resolve) => {
+      if (mediaRecorderRef.current && isRecording) {
+        // Set up a one-time listener for the stop event
+        const handleStop = () => {
+          mediaRecorderRef.current.removeEventListener('stop', handleStop);
+          console.log('Recording stopped, finalizing data...');
+          setIsRecording(false);
+          setIsPaused(false);
+          toast.success('Recording stopped');
+          resolve();
+        };
+        
+        mediaRecorderRef.current.addEventListener('stop', handleStop);
+        
+        // Request final data before stopping
+        if (mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.requestData();
+          
+          // Stop the recording
+          setTimeout(() => {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+              mediaRecorderRef.current.stop();
+            }
+          }, 100);
+        } else if (mediaRecorderRef.current.state === 'paused') {
+          mediaRecorderRef.current.resume();
+          setTimeout(() => {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+              mediaRecorderRef.current.requestData();
+              mediaRecorderRef.current.stop();
+            }
+          }, 100);
+        }
+      } else {
+        resolve();
+      }
+    });
+  };
+
+  // Start/Stop speech recognition
+  const toggleSpeechRecognition = () => {
+    if (!speechRecognitionRef.current) {
+      toast.error('Speech recognition not supported in this browser');
+      return;
+    }
+
+    if (isListening) {
+      speechRecognitionRef.current.stop();
+      setIsListening(false);
+      setInterimTranscript('');
+    } else {
+      // Don't clear current answer when starting recognition
+      setInterimTranscript('');
+      speechRecognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
+
+  // Submit answer and move to next question
+  const submitAnswer = () => {
+    if (!currentAnswer.trim()) {
+      toast.warning('Please provide an answer before submitting.');
+      return;
+    }
+
+    const timestamp = Date.now() - (sessionStartTime?.getTime() || 0);
+    const answerData = {
+      questionIndex: currentQuestionIndex,
+      question: practiceQuestions[currentQuestionIndex],
+      answer: currentAnswer,
+      timestamp: timestamp,
+      videoTime: currentVideoTime
+    };
+
+    // Add to session data
+    setSessionData(prev => [...prev, answerData]);
+
+    // Add to messages
+    setMessages(prev => [...prev, {
+      type: 'answer',
+      content: currentAnswer,
+      timestamp: timestamp,
+      questionIndex: currentQuestionIndex
+    }]);
+
+    // Move to next question or finish
+    if (currentQuestionIndex < practiceQuestions.length - 1) {
+      const nextIndex = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(nextIndex);
+      setCurrentAnswer('');
+      
+      // Add next question to messages
+      setMessages(prev => [...prev, {
+        type: 'question',
+        content: practiceQuestions[nextIndex],
+        timestamp: timestamp + 1000,
+        questionIndex: nextIndex
+      }]);
+      
+      toast.success(`Question ${nextIndex + 1} of ${practiceQuestions.length}`);
+    } else {
+      // All questions completed - mark session as completed and show end session modal
+      setIsSessionCompleted(true);
+      toast.success('Practice session completed!');
+      
+      // Stop recording and wait for it to complete
+      if (isRecording) {
+        stopRecording().then(() => {
+          // Show end session modal after recording is properly stopped
+          setTimeout(() => {
+            setShowEndSessionModal(true);
+          }, 1000);
+        });
+      } else {
+        // Show end session modal immediately if not recording
+        setTimeout(() => {
+          setShowEndSessionModal(true);
+        }, 1000);
+      }
+    }
+  };
+
+  // Emergency camera shutdown (Safari-specific) - Enhanced
+  const emergencyCameraShutdown = useCallback(async () => {
+    console.log('EMERGENCY CAMERA SHUTDOWN - Enhanced Version');
+    toast.warning('Emergency camera shutdown initiated');
+    
+    try {
+      // Call comprehensive cleanup first
+      cleanup();
+      
+      // Force stop everything aggressively
+      if (mediaRecorderRef.current) {
+        try {
+          mediaRecorderRef.current.stream?.getTracks().forEach(track => track.stop());
+          mediaRecorderRef.current.stop();
+          mediaRecorderRef.current = null;
+        } catch (e) {
+          console.log('MediaRecorder emergency stop:', e);
+        }
+      }
+      
+      // Stop all tracks from stream ref
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          track.enabled = false;
+        });
+      }
+      
+      // Clear video completely
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.srcObject = null;
+        videoRef.current.src = "data:";
+        videoRef.current.removeAttribute('src');
+        videoRef.current.load();
+      }
+      
+      // Clear all refs
+      streamRef.current = null;
+      mediaRecorderRef.current = null;
+      
+      // Reset all states
+      setIsCameraOn(false);
+      setIsRecording(false);
+      setIsPaused(false);
+      
+      // Try to get new stream and immediately stop it (forces Safari to release)
+      try {
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        tempStream.getTracks().forEach(track => {
+          track.stop();
+          track.enabled = false;
+        });
+        console.log('Emergency: Created and stopped temp stream to force release');
+      } catch (e) {
+        console.log('Emergency: Could not create temp stream (might be good news)');
+      }
+      
+      // Verify camera release after delay
+      setTimeout(async () => {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          console.log('Emergency verification: Available devices after shutdown');
+        } catch (error) {
+          console.log('Emergency verification: Device enumeration failed');
+        }
+      }, 1000);
+      
+      toast.success('Emergency camera shutdown completed - check hardware light');
+      
+    } catch (error) {
+      console.error('Emergency shutdown failed:', error);
+      toast.error('Emergency shutdown encountered errors');
+    }
+  }, [cleanup]);
+
+  // Verify camera release (for debugging)
+  const verifyCameraRelease = async () => {
+    try {
+      // Try to access camera again to see if it's truly released
+      const testStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      testStream.getTracks().forEach(track => track.stop());
+      console.log('Camera verification: Camera was properly released');
+      return true;
+    } catch (error) {
+      console.log('Camera verification: Camera still in use or permission denied');
+      return false;
+    }
+  };
+
+  // Test video playback (for debugging)
+  const testVideoPlayback = () => {
+    if (recordedChunksRef.current && recordedChunksRef.current.length > 0) {
+      const blob = new Blob(recordedChunksRef.current, { 
+        type: recordedChunksRef.current[0].type || 'video/webm' 
+      });
+      const videoUrl = URL.createObjectURL(blob);
+      
+      // Create a test video element
+      const testVideo = document.createElement('video');
+      testVideo.src = videoUrl;
+      testVideo.controls = true;
+      testVideo.style.position = 'fixed';
+      testVideo.style.top = '10px';
+      testVideo.style.right = '10px';
+      testVideo.style.width = '300px';
+      testVideo.style.zIndex = '9999';
+      testVideo.style.border = '2px solid red';
+      
+      document.body.appendChild(testVideo);
+      
+      // Remove after 30 seconds
+      setTimeout(() => {
+        document.body.removeChild(testVideo);
+        URL.revokeObjectURL(videoUrl);
+      }, 30000);
+      
+      toast.info('Test video preview added to page (top-right, 30 seconds)');
+    } else {
+      toast.warning('No recorded video data available for testing');
+    }
+  };
+
+  // Export session data with video
+  const exportSessionData = async () => {
+    try {
+      const exportData = {
+        sessionId: `practice_${Date.now()}`,
+        startTime: sessionStartTime,
+        endTime: new Date(),
+        questions: practiceQuestions,
+        responses: sessionData,
+        totalDuration: Date.now() - (sessionStartTime?.getTime() || 0)
+      };
+
+      // Create and download JSON file
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `practice_session_${new Date().toISOString().split('T')[0]}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      document.body.appendChild(linkElement);
+      linkElement.click();
+      document.body.removeChild(linkElement);
+
+      // Export video if available
+      if (recordedChunksRef.current && recordedChunksRef.current.length > 0) {
+        console.log('Preparing video export with', recordedChunksRef.current.length, 'chunks');
+        
+        // Calculate total size
+        const totalSize = recordedChunksRef.current.reduce((total, chunk) => total + chunk.size, 0);
+        console.log('Total video data size:', totalSize, 'bytes');
+        
+        if (totalSize > 0) {
+          // Determine MIME type from the first chunk
+          const firstChunk = recordedChunksRef.current[0];
+          let mimeType = firstChunk.type || 'video/webm';
+          
+          // Create blob with explicit MIME type
+          const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+          console.log('Video blob created - Size:', blob.size, 'Type:', blob.type);
+          
+          if (blob.size > 0) {
+            const videoUrl = URL.createObjectURL(blob);
+            
+            // Determine file extension based on MIME type
+            let extension = 'webm';
+            if (mimeType.includes('mp4')) {
+              extension = 'mp4';
+            } else if (mimeType.includes('webm')) {
+              extension = 'webm';
+            }
+            
+            const videoLink = document.createElement('a');
+            videoLink.href = videoUrl;
+            videoLink.download = `practice_video_${new Date().toISOString().split('T')[0]}.${extension}`;
+            videoLink.style.display = 'none';
+            document.body.appendChild(videoLink);
+            
+            // Trigger download
+            videoLink.click();
+            
+            // Cleanup
+            document.body.removeChild(videoLink);
+            setTimeout(() => URL.revokeObjectURL(videoUrl), 5000);
+            
+            toast.success('Session data and video exported successfully!');
+          } else {
+            console.warn('Video blob is empty despite having chunks');
+            toast.warning('Session data exported, but video file is empty');
+          }
+        } else {
+          console.warn('No video data in chunks');
+          toast.warning('Session data exported, but no video data available');
+        }
+      } else {
+        console.log('No video chunks available for export');
+        toast.success('Session data exported successfully! (No video recorded)');
+      }
+    } catch (error) {
+      console.error('Error during export:', error);
+      toast.error('Export failed: ' + error.message);
+    }
+  };
+
+  // Reset all session data
+  const resetSession = async () => {
+    // Stop recording if active
+    if (isRecording) {
+      await stopRecording();
+    }
+    
+    // Stop speech recognition
+    if (speechRecognitionRef.current && isListening) {
+      speechRecognitionRef.current.stop();
+    }
+    
+    // Reset all states
+    setIsRecording(false);
+    setIsPaused(false);
+    setCurrentQuestionIndex(0);
+    setMessages([]);
+    setCurrentAnswer('');
+    setIsListening(false);
+    setSessionData([]);
+    setSessionStartTime(null);
+    setCurrentVideoTime(0);
+    setHasStarted(false);
+    setIsSessionCompleted(false);
+    setShowChatPopup(false);
+    setInterimTranscript('');
+    
+    // Clear recorded chunks
+    recordedChunksRef.current = [];
+    
+    // Reset media recorder
+    if (mediaRecorderRef.current) {
+      if (mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      mediaRecorderRef.current = null;
+    }
+    
+    // Reset camera state and reinitialize if needed
+    if (!isCameraOn) {
+      setIsCameraOn(true);
+      // Reinitialize camera
+      await initializeCamera();
+    }
+    
+    toast.info('Session reset successfully!');
+  };
+
+  // Format time display
+  const formatTime = (milliseconds) => {
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Cleanup resources - Enhanced for better camera release
+  const cleanup = useCallback(() => {
+    console.log('Starting comprehensive cleanup of all resources');
+    
+    // Step 1: Stop MediaRecorder aggressively
+    if (mediaRecorderRef.current) {
+      try {
+        const state = mediaRecorderRef.current.state;
+        console.log('MediaRecorder cleanup - current state:', state);
+        
+        if (state === 'recording' || state === 'paused') {
+          mediaRecorderRef.current.stop();
+        }
+        
+        // Clear all event handlers
+        mediaRecorderRef.current.ondataavailable = null;
+        mediaRecorderRef.current.onstop = null;
+        mediaRecorderRef.current.onstart = null;
+        mediaRecorderRef.current.onerror = null;
+        
+        mediaRecorderRef.current = null;
+        console.log('MediaRecorder cleaned up successfully');
+      } catch (error) {
+        console.error('Error during MediaRecorder cleanup:', error);
+      }
+    }
+    
+    // Step 2: Stop all media stream tracks immediately
+    if (streamRef.current) {
+      try {
+        const tracks = streamRef.current.getTracks();
+        console.log(`Cleanup: Found ${tracks.length} tracks to stop`);
+        
+        tracks.forEach((track, index) => {
+          console.log(`Stopping track ${index + 1}: ${track.kind} (${track.label})`);
+          track.stop();
+          
+          // Verify track is stopped
+          if (track.readyState !== 'ended') {
+            console.warn(`Track ${index + 1} may not have stopped properly`);
+          }
+        });
+        
+        // Clear the stream reference immediately
+        streamRef.current = null;
+        console.log('All stream tracks stopped and cleared');
+      } catch (error) {
+        console.error('Error stopping stream tracks:', error);
+      }
+    }
+    
+    // Step 3: Clean up video element thoroughly
+    if (videoRef.current) {
+      try {
+        const video = videoRef.current;
+        
+        // Pause and clear source
+        video.pause();
+        video.srcObject = null;
+        video.src = '';
+        video.removeAttribute('src');
+        
+        // Clear any event listeners that might hold references
+        video.onloadedmetadata = null;
+        video.onplay = null;
+        video.onpause = null;
+        video.onended = null;
+        
+        // Force reload to clear any cached streams
+        video.load();
+        
+        console.log('Video element cleaned up completely');
+      } catch (error) {
+        console.error('Error cleaning up video element:', error);
+      }
+    }
+    
+    // Step 4: Stop speech recognition
+    if (speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.stop();
+        speechRecognitionRef.current.onresult = null;
+        speechRecognitionRef.current.onstart = null;
+        speechRecognitionRef.current.onend = null;
+        speechRecognitionRef.current.onerror = null;
+        speechRecognitionRef.current = null;
+        console.log('Speech recognition cleaned up');
+      } catch (error) {
+        console.error('Error cleaning up speech recognition:', error);
+      }
+    }
+    
+    // Step 5: Clear any remaining references
+    recordedChunksRef.current = [];
+    
+    // Step 6: Reset component state
+    setIsRecording(false);
+    setIsPaused(false);
+    setIsListening(false);
+    setIsCameraOn(false);
+    
+    // Step 7: Force garbage collection hint (browser dependent)
+    if (window.gc && typeof window.gc === 'function') {
+      try {
+        window.gc();
+        console.log('Garbage collection requested');
+      } catch (error) {
+        console.log('Garbage collection not available');
+      }
+    }
+    
+    console.log('Comprehensive cleanup completed');
+  }, []);
+
+  // Update video time
+  useEffect(() => {
+    if (sessionStartTime && hasStarted && !isSessionCompleted) {
+      const interval = setInterval(() => {
+        setCurrentVideoTime(Date.now() - sessionStartTime.getTime());
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [sessionStartTime, hasStarted, isSessionCompleted]);
+
+  // Scroll to bottom when new messages are added
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  return (
+    <div className="h-screen transparent-window relative overflow-hidden">
+      {/* Video Background - Full Screen */}
+      <div className="absolute inset-0">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-full h-full object-cover"
+        />
+        
+        {/* Camera Off Overlay */}
+        {!isCameraOn && (
+          <div className="absolute inset-0 practice-glass-dark flex items-center justify-center">
+            <div className="text-center text-white glass-panel p-8">
+              <Icon icon="lucide:video-off" className="w-16 h-16 mx-auto mb-4 opacity-75" />
+              <p className="text-lg font-medium">Camera is turned off</p>
+              <p className="text-sm opacity-60 mt-2">Camera access has been released</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Timer - Top Left Corner */}
+      {sessionStartTime && (
+        <div className="absolute top-4 left-4 z-20">
+          <div className="practice-glass-dark text-white px-4 py-2 rounded-lg font-mono text-lg shadow-lg">
+            {formatTime(currentVideoTime)}
+          </div>
+        </div>
+      )}
+
+      {/* Question Counter - Top Right Corner */}
+      {hasStarted && (
+        <div className="absolute top-4 right-4 z-20">
+          <div className="practice-glass-light text-white px-4 py-2 rounded-lg font-semibold shadow-lg">
+            {currentQuestionIndex + 1}/{practiceQuestions.length}
+          </div>
+        </div>
+      )}
+
+      {/* Controls Panel - Top Right Corner (below counter) */}
+      <div className="absolute top-20 right-4 z-20 flex flex-col space-y-2">
+        {/* Camera Toggle */}
+        <button
+          onClick={toggleCamera}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all glass-button ${
+            isCameraOn 
+              ? 'bg-green-500 bg-opacity-30 hover:bg-opacity-40 border-green-400' 
+              : 'bg-red-500 bg-opacity-30 hover:bg-opacity-40 border-red-400'
+          } text-white shadow-lg`}
+          title={isCameraOn ? "Turn Camera Off" : "Turn Camera On"}
+        >
+          <Icon icon={isCameraOn ? "lucide:video" : "lucide:video-off"} className="w-6 h-6" />
+        </button>
+
+        {/* Recording Controls */}
+        {!isRecording ? (
+          <button
+            onClick={startRecording}
+            disabled={!isCameraOn}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all text-white shadow-lg ${
+              isCameraOn 
+                ? 'glass-button bg-red-500 bg-opacity-30 hover:bg-opacity-40 border-red-400' 
+                : 'bg-gray-500 bg-opacity-20 cursor-not-allowed border-gray-400'
+            }`}
+            title={isCameraOn ? "Start Recording" : "Camera must be on to start recording"}
+          >
+            <Icon icon="lucide:circle" className="w-6 h-6" />
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={togglePause}
+              className="w-12 h-12 rounded-full glass-button bg-yellow-500 bg-opacity-30 hover:bg-opacity-40 border-yellow-400 text-white transition-all shadow-lg flex items-center justify-center"
+              title={isPaused ? "Resume Recording" : "Pause Recording"}
+            >
+              <Icon icon={isPaused ? "lucide:play" : "lucide:pause"} className="w-6 h-6" />
+            </button>
+            <button
+              onClick={stopRecording}
+              className="w-12 h-12 rounded-full glass-button bg-gray-500 bg-opacity-30 hover:bg-opacity-40 border-gray-400 text-white transition-all shadow-lg flex items-center justify-center"
+              title="Stop Recording"
+            >
+              <Icon icon="lucide:square" className="w-6 h-6" />
+            </button>
+          </>
+        )}
+
+        {/* End Session */}
+        {hasStarted && (
+          <button
+            onClick={() => setShowEndSessionModal(true)}
+            className="w-12 h-12 rounded-full glass-button bg-red-600 bg-opacity-30 hover:bg-opacity-40 border-red-400 text-white transition-all shadow-lg flex items-center justify-center"
+            title="End Session"
+          >
+            <Icon icon="lucide:power" className="w-6 h-6" />
+          </button>
+        )}
+
+        {/* Debug Controls */}
+        {hasStarted && (
+          <>
+            <button
+              onClick={exportSessionData}
+              className="w-12 h-12 rounded-full glass-button bg-blue-500 bg-opacity-30 hover:bg-opacity-40 border-blue-400 text-white transition-all shadow-lg flex items-center justify-center"
+              title="Export Data"
+            >
+              <Icon icon="lucide:download" className="w-6 h-6" />
+            </button>
+            
+            <button
+              onClick={emergencyCameraShutdown}
+              className="w-12 h-12 rounded-full glass-button bg-red-700 bg-opacity-40 hover:bg-opacity-50 border-red-500 text-white transition-all shadow-lg flex items-center justify-center border-2"
+              title="Emergency Camera Shutdown"
+            >
+              <Icon icon="lucide:alert-triangle" className="w-6 h-6" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Chat Popup Button - Bottom Right Corner */}
+      <button
+        onClick={() => setShowChatPopup(!showChatPopup)}
+        className="absolute bottom-4 right-4 z-20 w-14 h-14 rounded-full glass-button bg-purple-500 bg-opacity-30 hover:bg-opacity-40 border-purple-400 text-white shadow-lg flex items-center justify-center transition-all"
+        title="Toggle Chat History"
+      >
+        <Icon icon="lucide:message-circle" className="w-7 h-7" />
+        {messages.length > 0 && (
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full text-xs flex items-center justify-center">
+            {messages.length}
+          </div>
+        )}
+      </button>
+
+      {/* Answer Input Area with Glass Effect - Bottom Center */}
+      {hasStarted && currentQuestionIndex < practiceQuestions.length && (
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 max-w-4xl w-full px-4">
+          <div className="glass-panel p-4">
+            {/* Current Question Display */}
+            <div className="mb-4 p-3 practice-glass-dark rounded-lg">
+              <div className="flex items-start space-x-3">
+                <Icon icon="lucide:help-circle" className="w-5 h-5 text-blue-300 mt-1 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-200 mb-1">Question {currentQuestionIndex + 1} of {practiceQuestions.length}:</p>
+                  <p className="text-white text-sm">{practiceQuestions[currentQuestionIndex]}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <textarea
+                value={currentAnswer + interimTranscript}
+                onChange={(e) => setCurrentAnswer(e.target.value.replace(interimTranscript, ''))}
+                placeholder="Type your answer here or use speech-to-text..."
+                className="w-full p-4 bg-white bg-opacity-90 border border-white border-opacity-50 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none text-lg backdrop-blur-sm"
+                rows={3}
+              />
+              
+              {/* Interim transcript styling */}
+              {interimTranscript && (
+                <div className="absolute bottom-4 right-16 text-gray-500 italic text-sm pointer-events-none bg-white bg-opacity-75 px-2 py-1 rounded">
+                  Speaking: {interimTranscript}
+                </div>
+              )}
+              
+              {/* Speech Recognition Button */}
+              <button
+                onClick={toggleSpeechRecognition}
+                className={`absolute top-3 right-3 w-10 h-10 rounded-full transition-colors flex items-center justify-center ${
+                  isListening 
+                    ? 'bg-red-500 text-white animate-pulse speech-listening' 
+                    : 'bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-600'
+                }`}
+                title={isListening ? 'Stop listening' : 'Start speech recognition'}
+              >
+                <Icon icon="lucide:mic" className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-white">
+                {isListening && (
+                  <span className="flex items-center space-x-2 bg-black bg-opacity-30 px-3 py-1 rounded-full">
+                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                    <span>Listening...</span>
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setCurrentAnswer('');
+                    setInterimTranscript('');
+                  }}
+                  className="px-4 py-2 text-white bg-white bg-opacity-20 border border-white border-opacity-50 rounded-lg hover:bg-opacity-30 backdrop-blur-sm transition-colors"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={submitAnswer}
+                  disabled={!currentAnswer.trim()}
+                  className="px-6 py-2 bg-blue-600 bg-opacity-90 text-white rounded-lg hover:bg-opacity-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 backdrop-blur-sm transition-colors"
+                >
+                  <span>Submit Answer</span>
+                  <Icon icon="lucide:send" className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Welcome Screen */}
+      {!hasStarted && (
+        <div className="absolute inset-0 practice-glass-ultra flex items-center justify-center z-10">
+          <div className="text-center text-white max-w-2xl px-4">
+            <Icon icon="lucide:video" className="w-20 h-20 mx-auto mb-6 text-blue-400" />
+            <h1 className="text-4xl font-bold mb-4">Practice Session</h1>
+            <p className="text-xl mb-8">Ready to start your interview practice?</p>
+            <div className="glass-panel p-6 text-left">
+              <h3 className="font-semibold text-blue-300 mb-4 text-center">What you'll practice:</h3>
+              <ul className="space-y-2">
+                <li className="flex items-center space-x-3">
+                  <Icon icon="lucide:check" className="w-5 h-5 text-green-400" />
+                  <span>{practiceQuestions.length} interview questions</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Icon icon="lucide:check" className="w-5 h-5 text-green-400" />
+                  <span>Video recording with timestamps</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Icon icon="lucide:check" className="w-5 h-5 text-green-400" />
+                  <span>Speech-to-text for answers</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Icon icon="lucide:check" className="w-5 h-5 text-green-400" />
+                  <span>Session data for analysis</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Session Complete Overlay */}
+      {hasStarted && currentQuestionIndex >= practiceQuestions.length && (
+        <div className="absolute inset-0 practice-glass-dark flex items-center justify-center z-10">
+          <div className="text-center text-white max-w-2xl px-4">
+            <Icon icon="lucide:check-circle" className="w-20 h-20 text-green-400 mx-auto mb-6" />
+            <h2 className="text-3xl font-bold mb-4">Practice Session Complete!</h2>
+            <p className="text-xl mb-6">
+              You've answered all {practiceQuestions.length} questions. Great job!
+            </p>
+            <div className="glass-panel p-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-sm opacity-75">Duration</p>
+                  <p className="text-xl font-semibold">{formatTime(currentVideoTime)}</p>
+                </div>
+                <div>
+                  <p className="text-sm opacity-75">Questions</p>
+                  <p className="text-xl font-semibold">{sessionData.length}/{practiceQuestions.length}</p>
+                </div>
+                <div>
+                  <p className="text-sm opacity-75">Average Time</p>
+                  <p className="text-xl font-semibold">
+                    {sessionData.length > 0 ? formatTime(sessionData.reduce((acc, item) => acc + (item.timestamp / sessionData.length), 0)) : '0:00'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={exportSessionData}
+              className="px-8 py-3 glass-button bg-green-500 bg-opacity-30 border-green-400 text-white rounded-lg hover:bg-opacity-40 flex items-center space-x-2 mx-auto transition-all text-lg"
+            >
+              <Icon icon="lucide:download" className="w-5 h-5" />
+              <span>Download Session Data</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Popup */}
+      {showChatPopup && (
+        <div className="absolute right-4 bottom-20 w-80 md:w-96 h-96 z-30">
+          <div className="glass-panel h-full flex flex-col">
+            {/* Chat Header */}
+            <div className="bg-purple-600 bg-opacity-60 backdrop-blur-md text-white p-4 rounded-t-lg flex items-center justify-between border-b border-white border-opacity-10">
+              <h3 className="font-semibold text-white">Session History</h3>
+              <button
+                onClick={() => setShowChatPopup(false)}
+                className="text-white hover:text-gray-200 transition-colors"
+              >
+                <Icon icon="lucide:x" className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.length === 0 ? (
+                <div className="text-center text-white py-8">
+                  <Icon icon="lucide:message-circle" className="w-12 h-12 mx-auto mb-2 opacity-70" />
+                  <p className="text-white opacity-80">No messages yet</p>
+                </div>
+              ) : (
+                messages.map((message, index) => (
+                  <div key={index} className={`${message.type === 'answer' ? 'text-right' : 'text-left'}`}>
+                    <div className={`inline-block max-w-[80%] p-3 rounded-lg backdrop-blur-sm border border-opacity-30 ${
+                      message.type === 'question' 
+                        ? 'bg-blue-600 bg-opacity-20 text-white border-blue-400' 
+                        : 'bg-green-600 bg-opacity-20 text-white border-green-400'
+                    }`}>
+                      <p className="text-sm font-medium mb-1 opacity-90">
+                        {message.type === 'question' ? 'Question' : 'Your Answer'}
+                      </p>
+                      <p className="text-sm">{message.content}</p>
+                      <p className="text-xs mt-1 opacity-60 font-mono">
+                        {formatTime(message.timestamp)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recording Status Indicator */}
+      {isRecording && (
+        <div className="absolute bottom-4 left-4 z-20">
+          <div className="bg-red-600 bg-opacity-90 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center space-x-2 border border-red-400 border-opacity-50">
+            <div className="w-3 h-3 bg-white rounded-full animate-pulse recording-pulse"></div>
+            <span className="font-medium">
+              {isPaused ? 'Paused' : 'Recording'}
+            </span>
+            <span className="text-sm opacity-75">
+              {recordedChunksRef.current?.length || 0} chunks
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* End Session Modal */}
+      {showEndSessionModal && (
+        <div className="fixed inset-0 practice-glass-ultra flex items-center justify-center z-50">
+          <div className="glass-panel p-6 max-w-md w-full mx-4 text-white">
+            <div className="flex items-center mb-4">
+              <Icon icon="lucide:alert-triangle" className="w-6 h-6 text-red-400 mr-3" />
+              <h3 className="text-lg font-semibold">End Practice Session</h3>
+            </div>
+            
+            <p className="text-gray-200 mb-6">
+              Are you sure you want to end this practice session? You can choose to export your data before ending.
+            </p>
+            
+            <div className="flex flex-col space-y-3">
+              <button
+                onClick={async () => {
+                  // Stop recording if still active
+                  if (isRecording) {
+                    await stopRecording();
+                  }
+                  await exportSessionData();
+                  resetSession();
+                  setShowEndSessionModal(false);
+                }}
+                className="w-full px-4 py-2 glass-button bg-blue-500 bg-opacity-30 border-blue-400 text-white rounded-lg hover:bg-opacity-40 flex items-center justify-center space-x-2"
+              >
+                <Icon icon="lucide:download" className="w-4 h-4" />
+                <span>Export Data & End Session</span>
+              </button>
+              
+              <button
+                onClick={async () => {
+                  // Stop recording if still active
+                  if (isRecording) {
+                    await stopRecording();
+                  }
+                  resetSession();
+                  setShowEndSessionModal(false);
+                }}
+                className="w-full px-4 py-2 glass-button bg-red-500 bg-opacity-30 border-red-400 text-white rounded-lg hover:bg-opacity-40 flex items-center justify-center space-x-2"
+              >
+                <Icon icon="lucide:x" className="w-4 h-4" />
+                <span>Just End Session</span>
+              </button>
+              
+              <button
+                onClick={() => setShowEndSessionModal(false)}
+                className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Camera Off Confirmation Modal */}
+      {showCameraOffModal && (
+        <div className="fixed inset-0 practice-glass-ultra flex items-center justify-center z-50">
+          <div className="glass-panel p-6 max-w-md w-full mx-4 text-white">
+            <div className="flex items-center mb-4">
+              <Icon icon="lucide:video-off" className="w-6 h-6 text-orange-400 mr-3" />
+              <h3 className="text-lg font-semibold">Turn Off Camera</h3>
+            </div>
+            
+            <p className="text-gray-200 mb-6">
+              You are currently recording. Turning off the camera will stop the recording and release camera access. Do you want to continue?
+            </p>
+            
+            <div className="flex flex-col space-y-3">
+              <button
+                onClick={() => handleCameraOffWithRecording(true)}
+                className="w-full px-4 py-2 glass-button bg-orange-500 bg-opacity-30 border-orange-400 text-white rounded-lg hover:bg-opacity-40 flex items-center justify-center space-x-2"
+              >
+                <Icon icon="lucide:video-off" className="w-4 h-4" />
+                <span>Stop Recording & Turn Off Camera</span>
+              </button>
+              
+              <button
+                onClick={() => setShowCameraOffModal(false)}
+                className="w-full px-4 py-2 glass-button bg-gray-500 bg-opacity-20 border-gray-400 text-white rounded-lg hover:bg-opacity-30"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+      {/* End Session Modal */}
+      {showEndSessionModal && (
+        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="modal-content bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <Icon icon="lucide:alert-triangle" className="w-6 h-6 text-red-600 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">End Practice Session</h3>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to end this practice session? You can choose to export your data before ending.
+            </p>
+            
+            <div className="flex flex-col space-y-3">
+              <button
+                onClick={async () => {
+                  // Stop recording if still active
+                  if (isRecording) {
+                    await stopRecording();
+                  }
+                  await exportSessionData();
+                  resetSession();
+                  setShowEndSessionModal(false);
+                }}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"
+              >
+                <Icon icon="lucide:download" className="w-4 h-4" />
+                <span>Export Data & End Session</span>
+              </button>
+              
+              <button
+                onClick={async () => {
+                  // Stop recording if still active
+                  if (isRecording) {
+                    await stopRecording();
+                  }
+                  resetSession();
+                  setShowEndSessionModal(false);
+                }}
+                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2"
+              >
+                <Icon icon="lucide:x" className="w-4 h-4" />
+                <span>Just End Session</span>
+              </button>
+              
+              <button
+                onClick={() => setShowEndSessionModal(false)}
+                className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default StartPractice;

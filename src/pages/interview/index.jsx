@@ -1,704 +1,472 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Icon } from '@iconify/react';
+
 
 const InterviewPlatform = () => {
-  const [isInterviewActive, setIsInterviewActive] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(10 * 60); // 10 minutes in seconds
-  const [isCameraOn, setIsCameraOn] = useState(false);
+  // Timer state
+  const [timeLeft, setTimeLeft] = useState(10 * 60); // 10 minutes in seconds
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timerStarted, setTimerStarted] = useState(false);
+
+  // Media controls state
   const [isMicOn, setIsMicOn] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [currentMessage, setCurrentMessage] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [showEndConfirmation, setShowEndConfirmation] = useState(false);
-  const [aiSpeaking, setAiSpeaking] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState('');
-  const [akoolVideoUrl, setAkoolVideoUrl] = useState('');
-  const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
-  const [akoolClientId, setAkoolClientId] = useState('zUQkvQlU4+2vfb+lyIsT9Q=='); // Client ID
-  const [akoolClientSecret, setAkoolClientSecret] = useState('u4QDUyalkg1JnQ/vXtsDFiCTB2ExfQ5k'); // Client Secret
-  const [akoolAccessToken, setAkoolAccessToken] = useState(''); // Generated access token
-  const [tokenExpiry, setTokenExpiry] = useState(null); // Token expiration time
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  
+  const [isVideoOn, setIsVideoOn] = useState(false);
+  const [isCallActive, setIsCallActive] = useState(false);
+
+  // Webcam state
+  const [stream, setStream] = useState(null);
+  const [cameraError, setCameraError] = useState(null);
+  const [micStream, setMicStream] = useState(null);
+  const [micError, setMicError] = useState(null);
   const videoRef = useRef(null);
-  const chatEndRef = useRef(null);
-  const recognitionRef = useRef(null);
-  const streamRef = useRef(null);
 
-  // Sample interview questions
-  const interviewQuestions = [
-    "Hello! Welcome to your interview. Please introduce yourself and tell me about your background.",
-    "What interests you most about this position and our company?",
-    "Can you describe a challenging project you've worked on recently?",
-    "How do you handle working under pressure and tight deadlines?",
-    "What are your greatest strengths and how do they apply to this role?",
-    "Where do you see yourself in the next 5 years?",
-    "Do you have any questions about the role or our company?"
-  ];
-
-  const [questionIndex, setQuestionIndex] = useState(0);
-
-  // Initialize speech recognition
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window) {
-      recognitionRef.current = new window.webkitSpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      
-      recognitionRef.current.onresult = (event) => {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          }
-        }
-        if (finalTranscript) {
-          handleSpeechInput(finalTranscript);
-        }
-      };
-    }
-  }, []);
+  // AI Interviewer state
+  const [aiSpeaking, setAiSpeaking] = useState(false);
 
   // Timer effect
   useEffect(() => {
-    let timer;
-    if (isInterviewActive && timeRemaining > 0) {
-      timer = setInterval(() => {
-        setTimeRemaining(prev => prev - 1);
+    let interval = null;
+    if (isTimerRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(time => time - 1);
       }, 1000);
-    } else if (timeRemaining === 0) {
-      handleEndInterview();
+    } else if (timeLeft === 0) {
+      setIsTimerRunning(false);
+      // Interview ended
+      handleEndCall();
     }
-    return () => clearInterval(timer);
-  }, [isInterviewActive, timeRemaining]);
+    return () => clearInterval(interval);
+  }, [isTimerRunning, timeLeft]);
 
-  // Auto-scroll chat
+  // Handle video stream changes
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current.play().catch(console.error);
+      };
+    }
+  }, [stream]);
+
+  // Cleanup media streams on component unmount
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => {
+          track.stop();
+        });
+      }
+      if (micStream) {
+        micStream.getTracks().forEach(track => {
+          track.stop();
+        });
+      }
+    };
+  }, [stream, micStream]);
 
   // Format time display
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
+    const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Akool Authentication - Generate Access Token
-  const generateAkoolToken = async () => {
-    if (!akoolClientId || !akoolClientSecret) {
-      console.warn('Akool Client ID or Client Secret not set.');
-      return false;
-    }
-
-    setIsAuthenticating(true);
-
-    try {
-      const response = await fetch('https://api.akool.com/api/open/v3/auth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          clientId: akoolClientId,
-          clientSecret: akoolClientSecret
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.code === 1000 && data.data) {
-        setAkoolAccessToken(data.data.token);
-        // Set expiry time (typically tokens expire in 1 hour, but check API docs)
-        const expiryTime = Date.now() + (data.data.expires_in || 3600) * 1000;
-        setTokenExpiry(expiryTime);
-        setIsAuthenticating(false);
-        return true;
-      } else {
-        console.error('Failed to generate token:', data);
-        setIsAuthenticating(false);
-        return false;
-      }
-    } catch (error) {
-      console.error('Error generating token:', error);
-      setIsAuthenticating(false);
-      return false;
-    }
-  };
-
-  // Check if token is valid and not expired
-  const isTokenValid = () => {
-    if (!akoolAccessToken || !tokenExpiry) return false;
-    return Date.now() < tokenExpiry;
-  };
-
-  // Ensure valid token before API calls
-  const ensureValidToken = async () => {
-    if (isTokenValid()) {
-      return true;
-    }
-    return await generateAkoolToken();
-  };
-
-  // Akool Talking Avatar API integration
-  const generateAkoolAvatar = async (text, isFirstMessage = false) => {
-    // Ensure we have valid credentials and token
-    const hasValidToken = await ensureValidToken();
-    
-    if (!hasValidToken) {
-      console.warn('Unable to authenticate with Akool API. Using fallback animation.');
-      simulateAISpeech(text);
-      return;
-    }
-
-    setIsGeneratingAvatar(true);
+  // Control handlers
+  const handleStartInterview = () => {
+    setIsTimerRunning(true);
+    setTimerStarted(true);
+    setIsCallActive(true);
     setAiSpeaking(true);
-
-    try {
-      // Step 1: Create talking avatar
-      const createResponse = await fetch('https://api.akool.com/api/open/v3/avatar/talking', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${akoolAccessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          stitch: true,
-          input_text: text,
-          avatar_id: "avatar_1001", // Default avatar, you can change this
-          voice_id: "voice_1001", // Default voice, you can change this
-          webhook_url: null // Optional webhook for status updates
-        })
-      });
-
-      const createData = await createResponse.json();
-      
-      if (createData.code === 1000) {
-        const taskId = createData.data._id;
-        
-        // Step 2: Poll for completion
-        pollAvatarStatus(taskId);
-      } else {
-        console.error('Failed to create avatar:', createData);
-        setIsGeneratingAvatar(false);
-        setAiSpeaking(false);
-        // Fallback to static animation
-        simulateAISpeech(text);
-      }
-    } catch (error) {
-      console.error('Error generating avatar:', error);
-      setIsGeneratingAvatar(false);
-      setAiSpeaking(false);
-      // Fallback to static animation
-      simulateAISpeech(text);
-    }
+    
+    // Simulate AI starting to speak
+    setTimeout(() => setAiSpeaking(false), 3000);
   };
 
-  // Poll avatar generation status
-  const pollAvatarStatus = async (taskId) => {
-    const maxAttempts = 30; // Max 5 minutes polling
-    let attempts = 0;
-
-    const poll = async () => {
+  const handleToggleMic = async () => {
+    if (!isMicOn) {
+      // Turn microphone ON - request mic access
       try {
-        const response = await fetch(`https://api.akool.com/api/open/v3/avatar/talking/${taskId}`, {
-          headers: {
-            'Authorization': `Bearer ${akoolAccessToken}`
-          }
+        setMicError(null);
+        const audioStream = await navigator.mediaDevices.getUserMedia({ 
+          video: false, 
+          audio: true 
         });
-
-        const data = await response.json();
-
-        if (data.code === 1000) {
-          const status = data.data.status;
-          
-          if (status === 'completed') {
-            setAkoolVideoUrl(data.data.resource.resource_url);
-            setIsGeneratingAvatar(false);
-            // Keep aiSpeaking true while video plays
-          } else if (status === 'failed') {
-            console.error('Avatar generation failed');
-            setIsGeneratingAvatar(false);
-            setAiSpeaking(false);
-            simulateAISpeech('Sorry, there was an issue generating the response.');
-          } else if (attempts < maxAttempts) {
-            // Still processing, poll again in 10 seconds
-            attempts++;
-            setTimeout(poll, 10000);
-          } else {
-            console.error('Avatar generation timeout');
-            setIsGeneratingAvatar(false);
-            setAiSpeaking(false);
-            simulateAISpeech('Response generation timed out.');
-          }
-        }
+        setMicStream(audioStream);
+        setIsMicOn(true);
       } catch (error) {
-        console.error('Error polling avatar status:', error);
-        setIsGeneratingAvatar(false);
-        setAiSpeaking(false);
-        simulateAISpeech('There was an error processing the response.');
+        console.error('Error accessing microphone:', error);
+        setMicError(error.message);
+        setIsMicOn(false);
       }
-    };
-
-    poll();
-  };
-
-  // Handle video end event
-  const handleAvatarVideoEnd = () => {
-    setAiSpeaking(false);
-    setAkoolVideoUrl('');
-  };
-
-  // Simulate AI speech fallback (when API key is not available)
-  const simulateAISpeech = (text) => {
-    setAiSpeaking(true);
-    setTimeout(() => {
-      setAiSpeaking(false);
-    }, Math.max(3000, text.length * 50)); // Approximate speaking time
-  };
-
-  // Handle credentials setup
-  const handleCredentialsSetup = () => {
-    const clientId = prompt('Enter your Akool Client ID:');
-    if (!clientId) return;
-    
-    const clientSecret = prompt('Enter your Akool Client Secret:');
-    if (!clientSecret) return;
-    
-    setAkoolClientId(clientId);
-    setAkoolClientSecret(clientSecret);
-    
-    // Automatically generate token after setting credentials
-    setTimeout(() => {
-      generateAkoolToken();
-    }, 100);
-  };
-
-  // Start camera
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: isMicOn 
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      streamRef.current = stream;
-      setIsCameraOn(true);
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions.');
-    }
-  };
-
-  // Stop camera
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-    setIsCameraOn(false);
-  };
-
-  // Toggle microphone
-  const toggleMicrophone = () => {
-    setIsMicOn(!isMicOn);
-    if (streamRef.current) {
-      const audioTracks = streamRef.current.getAudioTracks();
-      audioTracks.forEach(track => {
-        track.enabled = !isMicOn;
-      });
-    }
-  };
-
-  // Start interview
-  const startInterview = async () => {
-    setIsInterviewActive(true);
-    await startCamera();
-    setIsMicOn(true);
-    
-    // Add welcome message
-    const welcomeMsg = {
-      id: Date.now(),
-      sender: 'ai',
-      message: interviewQuestions[0],
-      timestamp: new Date().toLocaleTimeString()
-    };
-    setChatMessages([welcomeMsg]);
-    setCurrentQuestion(interviewQuestions[0]);
-    
-    // Generate Akool avatar for welcome message
-    generateAkoolAvatar(interviewQuestions[0], true);
-  };
-
-  // Handle speech input
-  const handleSpeechInput = (transcript) => {
-    const message = {
-      id: Date.now(),
-      sender: 'user',
-      message: transcript,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    setChatMessages(prev => [...prev, message]);
-    
-    // Simulate AI response after user speaks
-    setTimeout(() => {
-      handleAIResponse();
-    }, 2000);
-  };
-
-  // Handle AI response
-  const handleAIResponse = () => {
-    if (questionIndex < interviewQuestions.length - 1) {
-      const nextQuestion = interviewQuestions[questionIndex + 1];
-      const aiMessage = {
-        id: Date.now(),
-        sender: 'ai',
-        message: nextQuestion,
-        timestamp: new Date().toLocaleTimeString()
-      };
-      setChatMessages(prev => [...prev, aiMessage]);
-      setCurrentQuestion(nextQuestion);
-      setQuestionIndex(prev => prev + 1);
-      generateAkoolAvatar(nextQuestion);
     } else {
-      const closingMessage = {
-        id: Date.now(),
-        sender: 'ai',
-        message: "Thank you for your time! This concludes our interview. Good luck!",
-        timestamp: new Date().toLocaleTimeString()
-      };
-      setChatMessages(prev => [...prev, closingMessage]);
-      generateAkoolAvatar("Thank you for your time! This concludes our interview. Good luck!");
-      setTimeout(() => handleEndInterview(), 5000);
-    }
-  };
-
-  // Send text message
-  const sendMessage = () => {
-    if (currentMessage.trim()) {
-      const message = {
-        id: Date.now(),
-        sender: 'user',
-        message: currentMessage,
-        timestamp: new Date().toLocaleTimeString()
-      };
-      setChatMessages(prev => [...prev, message]);
-      setCurrentMessage('');
+      // Turn microphone OFF - stop mic
+      if (micStream) {
+        micStream.getTracks().forEach(track => {
+          track.stop();
+        });
+        setMicStream(null);
+      }
       
-      // Simulate AI response
-      setTimeout(() => {
-        handleAIResponse();
-      }, 2000);
+      setIsMicOn(false);
+      setMicError(null);
     }
   };
 
-  // Toggle speech recognition
-  const toggleSpeechRecognition = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
+  const handleToggleVideo = async () => {
+    if (!isVideoOn) {
+      // Turn video ON - request camera access
+      try {
+        setCameraError(null);
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 }, 
+            height: { ideal: 720 },
+            facingMode: 'user'
+          }, 
+          audio: false // We'll handle audio separately
+        });
+        
+        // Set the video element source first
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          // Ensure video plays
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play().catch(console.error);
+          };
+        }
+        
+        setStream(mediaStream);
+        setIsVideoOn(true);
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setCameraError(error.message);
+        setIsVideoOn(false);
+      }
     } else {
-      recognitionRef.current?.start();
-      setIsListening(true);
+      // Turn video OFF - stop camera
+      if (stream) {
+        stream.getTracks().forEach(track => {
+          track.stop();
+        });
+        setStream(null);
+      }
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      
+      setIsVideoOn(false);
+      setCameraError(null);
     }
   };
 
-  // Handle end interview
-  const handleEndInterview = () => {
-    setShowEndConfirmation(true);
-  };
-
-  // Confirm end interview
-  const confirmEndInterview = () => {
-    setIsInterviewActive(false);
-    setShowEndConfirmation(false);
-    stopCamera();
+  const handleEndCall = () => {
+    // Stop camera stream when ending call
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        track.stop();
+      });
+      setStream(null);
+    }
+    
+    // Stop microphone stream when ending call
+    if (micStream) {
+      micStream.getTracks().forEach(track => {
+        track.stop();
+      });
+      setMicStream(null);
+    }
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
+    setIsCallActive(false);
+    setIsTimerRunning(false);
     setIsMicOn(false);
-    setTimeRemaining(10 * 60);
-    setQuestionIndex(0);
-    setChatMessages([]);
-    setCurrentQuestion('');
-    setAkoolVideoUrl('');
-    setIsGeneratingAvatar(false);
-    
-    // Keep authentication credentials but clear tokens if expired
-    if (!isTokenValid()) {
-      setAkoolAccessToken('');
-      setTokenExpiry(null);
-    }
-    
-    // Here you would submit the interview data to your backend
-    alert('Interview submitted successfully!');
+    setIsVideoOn(false);
+    setCameraError(null);
+    setMicError(null);
   };
 
-  // Cancel end interview
-  const cancelEndInterview = () => {
-    setShowEndConfirmation(false);
+  const handlePauseResume = () => {
+    setIsTimerRunning(!isTimerRunning);
   };
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col">
-      {/* API Configuration (show when no valid token) */}
-      {!isTokenValid() && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-yellow-400 mr-2">⚠️</span>
-              <div>
-                <p className="text-sm text-yellow-700">
-                  {!akoolClientId || !akoolClientSecret ? 
-                    'Akool credentials not configured. Set your Client ID and Client Secret to enable talking avatar.' :
-                    'Akool token expired or invalid. Click to refresh authentication.'
-                  }
-                </p>
-                {akoolAccessToken && tokenExpiry && (
-                  <p className="text-xs text-yellow-600 mt-1">
-                    Token expires: {new Date(tokenExpiry).toLocaleString()}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex space-x-2">
-              {(!akoolClientId || !akoolClientSecret) ? (
-                <button
-                  onClick={handleCredentialsSetup}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-yellow-800 px-3 py-1 rounded text-sm"
-                  disabled={isAuthenticating}
-                >
-                  {isAuthenticating ? 'Authenticating...' : 'Set Credentials'}
-                </button>
-              ) : (
-                <button
-                  onClick={generateAkoolToken}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-yellow-800 px-3 py-1 rounded text-sm"
-                  disabled={isAuthenticating}
-                >
-                  {isAuthenticating ? 'Refreshing...' : 'Refresh Token'}
-                </button>
-              )}
-              {(akoolClientId && akoolClientSecret) && (
-                <button
-                  onClick={() => {
-                    setAkoolClientId('');
-                    setAkoolClientSecret('');
-                    setAkoolAccessToken('');
-                    setTokenExpiry(null);
-                  }}
-                  className="bg-red-400 hover:bg-red-500 text-red-800 px-3 py-1 rounded text-sm"
-                >
-                  Reset
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
+    <div className="h-screen  flex flex-col">
       {/* Header with Timer */}
-      <div className="bg-white shadow-md p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-gray-800">AI Interview Platform</h1>
-        <div className="flex items-center space-x-2 text-lg font-mono">
-          <span className="text-blue-600">🕒</span>
-          <span className={`${timeRemaining < 120 ? 'text-red-600' : 'text-gray-700'}`}>
-            {formatTime(timeRemaining)}
-          </span>
+      <div className="px-6 py-4 flex items-center justify-between">
+        <div className="text-white">
+          <h1 className="text-xl font-semibold">AI Interview Session</h1>
+          <p className="text-gray-400 text-sm">Technical Interview Round</p>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex">
-        {/* Left Section (50%) */}
-        <div className="w-1/2 flex flex-col">
-          {/* AI Section (Top Half) */}
-          <div className="h-1/2 bg-gray-900 relative flex items-center justify-center">
-            {akoolVideoUrl ? (
-              // Akool Talking Avatar Video
-              <video
-                key={akoolVideoUrl}
-                autoPlay
-                onEnded={handleAvatarVideoEnd}
-                className="w-full h-full object-cover rounded-lg"
-                controls={false}
-              >
-                <source src={akoolVideoUrl} type="video/mp4" />
-              </video>
-            ) : (
-              // Fallback Static Avatar
-              <div className="text-center text-white">
-                <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-4 mx-auto ${aiSpeaking || isGeneratingAvatar ? 'animate-pulse' : ''}`}>
-                  <span className="text-6xl">🤖</span>
-                </div>
-                <h3 className="text-lg font-semibold">AI Interviewer</h3>
-                <p className="text-sm opacity-75">
-                  {isGeneratingAvatar ? 'Generating response...' : 
-                   aiSpeaking ? 'Speaking...' : 'Listening...'}
-                </p>
-                {!isTokenValid() && (
-                  <p className="text-xs text-yellow-400 mt-2">
-                    Authentication required for Akool Avatar
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {/* Akool.com Integration Label */}
-            <div className="absolute bottom-4 right-4 text-xs text-gray-400">
-              Powered by Akool.com
-            </div>
-            
-            {/* Loading overlay for avatar generation */}
-            {isGeneratingAvatar && (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="text-center text-white">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
-                  <p className="text-sm">Generating AI Avatar...</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* User Section (Bottom Half) */}
-          <div className="h-1/2 bg-black relative">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className={`w-full h-full object-cover ${isCameraOn ? 'block' : 'hidden'}`}
-            />
-            {!isCameraOn && (
-              <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                <div className="text-center text-white">
-                  <span className="text-6xl opacity-50">📷</span>
-                  <p>Camera Off</p>
-                </div>
-              </div>
-            )}
-
-            {/* Control Buttons */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-4">
-              {!isInterviewActive ? (
-                <button
-                  onClick={startInterview}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2"
-                >
-                  <span>Start Interview</span>
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setIsCameraOn(!isCameraOn)}
-                    className={`p-3 rounded-full ${isCameraOn ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-700'} text-white`}
-                    title={isCameraOn ? "Turn off camera" : "Turn on camera"}
-                  >
-                    <span className="text-lg">{isCameraOn ? "📹" : "📷"}</span>
-                  </button>
-                  
-                  <button
-                    onClick={toggleMicrophone}
-                    className={`p-3 rounded-full ${isMicOn ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-700'} text-white`}
-                    title={isMicOn ? "Mute microphone" : "Unmute microphone"}
-                  >
-                    <span className="text-lg">{isMicOn ? "🎤" : "🔇"}</span>
-                  </button>
-                  
-                  <button
-                    onClick={toggleSpeechRecognition}
-                    className={`p-3 rounded-full ${isListening ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'} text-white`}
-                    title={isListening ? "Stop listening" : "Start voice input"}
-                  >
-                    <span className="text-lg">{isListening ? "🔴" : "🎙️"}</span>
-                  </button>
-                  
-                  <button
-                    onClick={handleEndInterview}
-                    className="p-3 rounded-full bg-red-600 hover:bg-red-700 text-white"
-                    title="End interview"
-                  >
-                    <span className="text-lg">📞</span>
-                  </button>
-                </>
-              )}
+        
+        {/* Timer Display */}
+        <div className="flex items-center space-x-4">
+          <div className="bg-gray-700 px-4 py-2 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Icon icon="heroicons:clock" className="w-5 h-5 text-gray-400" />
+              <div className={`w-2 h-2 rounded-full ${isTimerRunning ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`}></div>
+              <span className="text-white font-mono text-lg">{formatTime(timeLeft)}</span>
             </div>
           </div>
-        </div>
-
-        {/* Right Section (50%) - Chat */}
-        <div className="w-1/2 bg-white flex flex-col">
-          <div className="bg-gray-50 p-4 border-b">
-            <h2 className="text-lg font-semibold text-gray-800">Interview Conversation</h2>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {chatMessages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.sender === 'user' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-200 text-gray-800'
-                }`}>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="text-sm">{message.sender === 'user' ? "👤" : "🤖"}</span>
-                    <span className="text-xs opacity-75">{message.timestamp}</span>
-                  </div>
-                  <p className="text-sm">{message.message}</p>
-                </div>
-              </div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
-
-          {/* Message Input */}
-          {isInterviewActive && (
-            <div className="p-4 border-t">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={currentMessage}
-                  onChange={(e) => setCurrentMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  placeholder="Type your response or use voice..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  onClick={sendMessage}
-                  className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg"
-                  title="Send message"
-                >
-                  <span className="text-lg">📤</span>
-                </button>
-              </div>
-            </div>
+          
+          {!timerStarted ? (
+            <button
+              onClick={handleStartInterview}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            >
+              <Icon icon="heroicons:play" className="w-4 h-4" />
+              <span>Start Interview</span>
+            </button>
+          ) : (
+            <button
+              onClick={handlePauseResume}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            >
+              {isTimerRunning ? <Icon icon="heroicons:pause" className="w-4 h-4" /> : <Icon icon="heroicons:play" className="w-4 h-4" />}
+              <span>{isTimerRunning ? 'Pause' : 'Resume'}</span>
+            </button>
           )}
         </div>
       </div>
 
-      {/* End Interview Confirmation Modal */}
-      {showEndConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md">
-            <h3 className="text-lg font-semibold mb-4">End Interview?</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to end the interview? This action will submit your responses.
-            </p>
-            <div className="flex space-x-4">
-              <button
-                onClick={cancelEndInterview}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Continue Interview
-              </button>
-              <button
-                onClick={confirmEndInterview}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                End & Submit
-              </button>
+      {/* Main Video Area */}
+      <div className="flex-1 p-4">
+        <div className="h-full grid grid-cols-2 gap-4">
+          
+          {/* AI Interviewer */}
+          <div className="relative bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl overflow-hidden shadow-2xl border-2 border-blue-500">
+            <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm font-medium">
+              AI Interviewer
             </div>
+            
+            {/* AI Speaking Indicator */}
+            {aiSpeaking && (
+              <div className="absolute top-4 right-4 flex items-center space-x-2">
+                <Icon icon="heroicons:speaker-wave" className="w-4 h-4 text-white" />
+                <div className="flex space-x-1">
+                  <div className="w-1 h-4 bg-white rounded animate-pulse"></div>
+                  <div className="w-1 h-6 bg-white rounded animate-pulse" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-1 h-5 bg-white rounded animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                </div>
+              </div>
+            )}
+            
+            {/* AI Avatar */}
+            <div className="h-full flex items-center justify-center">
+              <div className="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <div className="w-20 h-20 bg-blue-300 rounded-full flex items-center justify-center">
+                  <Icon icon="heroicons:cpu-chip" className="w-10 h-10 text-blue-800" />
+                </div>
+              </div>
+            </div>
+
+            {/* AI Status */}
+            <div className="absolute bottom-4 left-4 right-4">
+              <div className="bg-black bg-opacity-50 text-white p-3 rounded-lg">
+                <p className="text-sm">
+                  {!timerStarted 
+                    ? "Ready to start interview..." 
+                    : aiSpeaking 
+                      ? "Now speaking: Tell me about yourself..."
+                      : "Listening for your response..."
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* User Video */}
+          <div className="relative bg-gradient-to-br from-gray-800 to-gray-600 rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-500">
+            <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm font-medium">
+              You
+            </div>
+
+            {/* Video Status Icons */}
+            <div className="absolute top-4 right-4 flex space-x-2">
+              {cameraError && (
+                <div className="bg-red-500 rounded-full p-2">
+                  <Icon icon="heroicons:exclamation-triangle" className="w-4 h-4 text-white" />
+                </div>
+              )}
+              {!isVideoOn && !cameraError && (
+                <div className="bg-red-500 rounded-full p-2">
+                  <Icon icon="heroicons:video-camera-slash" className="w-4 h-4 text-white" />
+                </div>
+              )}
+              {micError && (
+                <div className="bg-red-500 rounded-full p-2">
+                  <Icon icon="heroicons:exclamation-triangle" className="w-4 h-4 text-white" />
+                </div>
+              )}
+              {!isMicOn && isCallActive && !micError && (
+                <div className="bg-red-500 rounded-full p-2">
+                  <Icon icon="heroicons:x-mark" className="w-4 h-4 text-white" />
+                </div>
+              )}
+            </div>
+
+            {/* User Video/Avatar Area */}
+            <div className="h-full flex items-center justify-center">
+              {isVideoOn && stream ? (
+                // Real video feed from camera
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{ transform: 'scaleX(-1)' }} // Mirror the video like a selfie camera
+                  className="w-full h-full object-cover"
+                />
+              ) : cameraError ? (
+                // Camera error state
+                <div className="text-center text-red-300">
+                  <div className="w-20 h-20 bg-red-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Icon icon="heroicons:exclamation-triangle" className="w-8 h-8 text-white" />
+                  </div>
+                  <p className="text-sm">Camera Error</p>
+                  <p className="text-xs mt-2 opacity-75">
+                    {cameraError.includes('Permission denied') 
+                      ? 'Camera access denied' 
+                      : 'Camera not available'
+                    }
+                  </p>
+                </div>
+              ) : (
+                // Video off placeholder
+                <div className="text-center text-gray-300">
+                  <div className="w-20 h-20 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Icon icon="heroicons:video-camera-slash" className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-sm">Camera Off</p>
+                </div>
+              )}
+            </div>
+
+            {/* User Status */}
+            {isCallActive && (
+              <div className="absolute bottom-4 left-4 right-4">
+                <div className="bg-black bg-opacity-50 text-white p-2 rounded-lg text-center">
+                  <p className="text-xs flex items-center justify-center">
+                    {micError ? (
+                      <>
+                        <Icon icon="heroicons:exclamation-triangle" className="w-4 h-4 mr-2 text-red-400" />
+                        Mic Error
+                      </>
+                    ) : isMicOn ? (
+                      <>
+                        <Icon icon="heroicons:microphone" className="w-4 h-4 mr-2" />
+                        Microphone Active
+                      </>
+                    ) : (
+                      <>
+                        <Icon icon="heroicons:x-mark" className="w-4 h-4 mr-2" />
+                        Microphone Muted
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Control Bar */}
+      <div className="bg-gray-800 px-6 py-4">
+        <div className="flex items-center justify-center space-x-4">
+          
+          {/* Microphone Toggle */}
+          <button
+            onClick={handleToggleMic}
+            disabled={!isCallActive}
+            className={`p-4 rounded-full transition-all duration-200 ${
+              micError
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : isMicOn 
+                  ? 'bg-gray-600 hover:bg-gray-500 text-white' 
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+            } ${!isCallActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={micError ? `Microphone Error: ${micError}` : (isMicOn ? 'Mute microphone' : 'Unmute microphone')}
+          >
+            {micError ? (
+              <Icon icon="heroicons:exclamation-triangle" className="w-6 h-6" />
+            ) : isMicOn ? (
+              <Icon icon="heroicons:microphone" className="w-6 h-6" />
+            ) : (
+              <Icon icon="heroicons:x-mark" className="w-6 h-6" />
+            )}
+          </button>
+
+          {/* Video Toggle */}
+          <button
+            onClick={handleToggleVideo}
+            disabled={!isCallActive}
+            className={`p-4 rounded-full transition-all duration-200 ${
+              cameraError
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : isVideoOn 
+                  ? 'bg-gray-600 hover:bg-gray-500 text-white' 
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+            } ${!isCallActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={cameraError ? `Camera Error: ${cameraError}` : (isVideoOn ? 'Turn off camera' : 'Turn on camera')}
+          >
+            {cameraError ? (
+              <Icon icon="heroicons:exclamation-triangle" className="w-6 h-6" />
+            ) : isVideoOn ? (
+              <Icon icon="heroicons:video-camera" className="w-6 h-6" />
+            ) : (
+              <Icon icon="heroicons:video-camera-slash" className="w-6 h-6" />
+            )}
+          </button>
+
+          {/* End Call */}
+          <button
+            onClick={handleEndCall}
+            disabled={!isCallActive}
+            className={`p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-200 ${
+              !isCallActive ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            <Icon icon="heroicons:phone-x-mark" className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Status Bar */}
+        <div className="mt-4 flex items-center justify-center space-x-8 text-sm text-gray-400">
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isCallActive ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+            <span>Call Status: {isCallActive ? 'Connected' : 'Disconnected'}</span>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isMicOn && isCallActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span>Audio: {isMicOn && isCallActive ? 'On' : 'Off'}</span>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isVideoOn && isCallActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span>Video: {isVideoOn && isCallActive ? 'On' : 'Off'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Interview End Modal */}
+      {timeLeft === 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Interview Completed!</h2>
+            <p className="text-gray-600 mb-6">
+              Your 10-minute AI interview session has ended. Thank you for participating!
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              Start New Interview
+            </button>
           </div>
         </div>
       )}

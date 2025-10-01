@@ -22,6 +22,7 @@ import AdminLayout from "./layout/AdminLayout";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 // JRN Pages
+const StartPractice = lazy(() => import("./pages/practice/start_practice"));
 const RoleplayPage = lazy(() => import("./pages/roleplay"));
 const PracticePage = lazy(() => import("./pages/practice"));
 const SocialPage = lazy(() => import("./pages/social"));
@@ -91,6 +92,7 @@ function App() {
 
 
           <Route path="practice" element={<PracticePage />} />
+          <Route path="practice/start" element={<StartPractice />} />
           <Route path="practice/interview" element={<InterviewPlatform />} />
           
           <Route path="social" element={<SocialPage />} />

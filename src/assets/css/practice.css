@@ -1,0 +1,482 @@
+/* Practice Session Specific Styles - New Responsive Design */
+
+/* Mobile-first responsive design */
+@media (max-width: 768px) {
+  /* Chat popup for mobile - full width */
+  .mobile-chat-popup {
+    right: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    top: 60px !important;
+    bottom: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Controls panel - smaller on mobile */
+  .mobile-controls {
+    gap: 8px !important;
+  }
+
+  .mobile-controls button {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  /* Question overlay - smaller padding on mobile */
+  .mobile-question-overlay {
+    bottom: 140px !important;
+    left: 8px !important;
+    right: 8px !important;
+    transform: none !important;
+    max-width: none !important;
+  }
+
+  /* Answer input - smaller on mobile */
+  .mobile-answer-input {
+    left: 8px !important;
+    right: 8px !important;
+    transform: none !important;
+    max-width: none !important;
+  }
+
+  .mobile-answer-input textarea {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+
+  /* Timer - smaller on mobile */
+  .mobile-timer {
+    top: 8px !important;
+    left: 8px !important;
+    font-size: 16px !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Counter - smaller on mobile */
+  .mobile-counter {
+    top: 8px !important;
+    right: 8px !important;
+    font-size: 14px !important;
+    padding: 8px 12px !important;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tablet-chat-popup {
+    width: 350px !important;
+  }
+}
+
+/* Full-screen video styles */
+.practice-fullscreen-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+/* Overlay elements positioning */
+.practice-overlay {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.practice-overlay > * {
+  pointer-events: all;
+}
+
+/* Smooth transitions for all interactive elements */
+.practice-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Chat popup animations */
+.chat-popup-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.chat-popup-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: all 0.3s ease-out;
+}
+
+.chat-popup-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.chat-popup-exit-active {
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s ease-in;
+}
+
+/* Button hover effects */
+.practice-button-hover:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Glass morphism effect - Enhanced */
+.practice-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.practice-glass-dark {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.practice-glass-light {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.practice-glass-ultra {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced glass panels for overlays */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+/* Glass buttons */
+.glass-button {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.02);
+}
+
+.glass-button:active {
+  transform: scale(0.98);
+}
+
+/* Transparent window backgrounds */
+.transparent-window {
+  background: transparent !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Recording pulse animation */
+.recording-pulse {
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Speech recognition visual feedback */
+.speech-listening {
+  animation: pulse-blue 1.5s infinite;
+}
+
+@keyframes pulse-blue {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* Legacy styles maintained for compatibility */
+
+.practice-video-container {
+  position: relative;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 0;
+  height: 100%;
+}
+
+.practice-video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.video-controls-overlay {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.video-controls-overlay:hover {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.record-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.record-button:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.record-button:disabled {
+  opacity: 0.6;
+  transform: none !important;
+  cursor: not-allowed !important;
+}
+
+.record-button.recording {
+  animation: pulse-red 2s infinite;
+}
+
+.camera-off-overlay {
+  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.camera-controls {
+  gap: 8px;
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.chat-message {
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.speech-recognition-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.speech-recognition-button.listening {
+  animation: pulse-blue 1.5s infinite;
+}
+
+@keyframes pulse-blue {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.progress-bar {
+  transition: width 0.3s ease;
+}
+
+.question-card {
+  border-left: 4px solid #3b82f6;
+  background: linear-gradient(135deg, #fef9e7 0%, #fef3c7 100%);
+}
+
+.answer-card {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.video-timestamp {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+.session-complete-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 2px solid #10b981;
+  animation: slideInUp 0.5s ease;
+}
+
+/* Fixed layout styles */
+.practice-main-content {
+  height: calc(100vh - 120px); /* Subtract header height */
+}
+
+.chat-messages-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.chat-messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Modal styles */
+.modal-overlay {
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .video-controls-overlay {
+    bottom: 12px;
+    padding: 8px 16px;
+    gap: 8px;
+  }
+  
+  .record-button {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .chat-message {
+    margin: 8px 0;
+  }
+  
+  .practice-main-content {
+    flex-direction: column;
+  }
+  
+  .practice-video-container,
+  .chat-panel {
+    width: 100%;
+    height: 50%;
+  }
+}
