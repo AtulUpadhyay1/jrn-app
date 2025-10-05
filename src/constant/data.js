@@ -13,12 +13,12 @@ export const menuItems = [
     isHeadr: true,
     title: "Upskilling",
   },
-  // {
-  //   title: "Roleplay",
-  //   isHide: true,
-  //   icon: "heroicons-outline:user-group",
-  //   link: "roleplay",
-  // },
+  {
+    title: "Roleplay",
+    isHide: true,
+    icon: "heroicons-outline:user-group",
+    link: "roleplay",
+  },
   {
     title: "Practice",
     isHide: true,
@@ -53,24 +53,24 @@ export const menuItems = [
     icon: "heroicons-outline:information-circle",
     link: "social",
   },
-  // {
-  //   title: "Inbox",
-  //   isHide: true,
-  //   icon: "heroicons-outline:document-text",
-  //   link: "inbox",
-  // },
-  // {
-  //   title: "Comparative Analysis",
-  //   isHide: true,
-  //   icon: "heroicons-outline:chart-bar",
-  //   link: "comparative-analysis",
-  // },
-  // {
-  //   title: "Assessment",
-  //   isHide: true,
-  //   icon: "heroicons-outline:clipboard-check",
-  //   link: "assessment",
-  // },
+  {
+    title: "Inbox",
+    isHide: true,
+    icon: "heroicons-outline:document-text",
+    link: "inbox",
+  },
+  {
+    title: "Comparative Analysis",
+    isHide: true,
+    icon: "heroicons-outline:chart-bar",
+    link: "comparative-analysis",
+  },
+  {
+    title: "Assessment",
+    isHide: true,
+    icon: "heroicons-outline:clipboard-check",
+    link: "assessment",
+  },
   {
     isHeadr: true,
     title: "Rewards",
@@ -822,10 +822,10 @@ export const topMenu = [
             m_childlink: "pricing",
           },
 
-          // {
-          //   m_childtitle: "Testimonial",
-          //   m_childlink: "testimonial",
-          // },
+          {
+            m_childtitle: "Testimonial",
+            m_childlink: "testimonial",
+          },
           {
             m_childtitle: "FAQ",
             m_childlink: "faq",
