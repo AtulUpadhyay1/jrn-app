@@ -4,18 +4,24 @@ import { toast } from 'react-toastify';
 import '../../assets/css/practice.css';
 
 // Practice Questions Data
-const practiceQuestions = [
-  "Tell me about yourself and your professional background.",
-  "What are your greatest strengths and how do they apply to this role?",
-  "Describe a challenging project you've worked on and how you overcame obstacles.",
-  "Where do you see yourself in 5 years?",
-  "Why are you interested in this position and our company?",
-  "Tell me about a time you had to work with a difficult team member.",
-  "How do you handle pressure and tight deadlines?",
-  "What motivates you in your work?",
-  "Describe your leadership style with an example.",
-  "Do you have any questions for us?"
-];
+// Get useCase from localStorage and use its questions array
+let practiceQuestions = [];
+try {
+  const useCase = JSON.parse(localStorage.getItem('practiceUseCase'));
+  if (useCase && Array.isArray(useCase.question) && useCase.question.length > 0) {
+    practiceQuestions = useCase.question;
+  } else {
+    // fallback static questions
+    practiceQuestions = [
+      "Tell me about yourself and your professional background.",
+    ];
+  }
+} catch (e) {
+  // fallback static questions
+  practiceQuestions = [
+    "Do you have any questions for us?"
+  ];
+}
 
 const StartPractice = () => {
   // States
