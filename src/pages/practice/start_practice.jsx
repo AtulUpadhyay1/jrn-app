@@ -10,20 +10,45 @@ try {
   const useCase = JSON.parse(localStorage.getItem('practiceUseCase'));
   if (useCase && Array.isArray(useCase.question) && useCase.question.length > 0) {
     practiceQuestions = useCase.question;
+    console.log('Loaded practice questions from localStorage:', practiceQuestions.length);
   } else {
     // fallback static questions
     practiceQuestions = [
       "Tell me about yourself and your professional background.",
+      "What are your greatest strengths and weaknesses?",
+      "Why do you want to work for our company?",
+      "Where do you see yourself in 5 years?",
+      "Do you have any questions for us?"
     ];
+    console.log('Using fallback practice questions:', practiceQuestions.length);
   }
 } catch (e) {
   // fallback static questions
   practiceQuestions = [
+    "Tell me about yourself and your professional background.",
+    "What are your greatest strengths and weaknesses?",
+    "Why do you want to work for our company?",
+    "Where do you see yourself in 5 years?",
     "Do you have any questions for us?"
   ];
+  console.log('Error loading questions, using fallback:', e);
 }
 
 const StartPractice = () => {
+  // Ensure we have valid questions
+  if (!practiceQuestions || practiceQuestions.length === 0) {
+    console.error('No practice questions available!');
+    practiceQuestions = [
+      "Tell me about yourself and your professional background.",
+      "What are your greatest strengths and weaknesses?",
+      "Why do you want to work for our company?",
+      "Where do you see yourself in 5 years?",
+      "Do you have any questions for us?"
+    ];
+  }
+
+  console.log('StartPractice component initialized with', practiceQuestions.length, 'questions');
+
   // States
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -53,46 +78,46 @@ const StartPractice = () => {
   // Cleanup resources - Enhanced for better camera release
   const cleanup = useCallback(() => {
     console.log('Starting comprehensive cleanup of all resources');
-    
+
     // Step 1: Stop MediaRecorder aggressively
     if (mediaRecorderRef.current) {
       try {
         const state = mediaRecorderRef.current.state;
         console.log('MediaRecorder cleanup - current state:', state);
-        
+
         if (state === 'recording' || state === 'paused') {
           mediaRecorderRef.current.stop();
         }
-        
+
         // Clear all event handlers
         mediaRecorderRef.current.ondataavailable = null;
         mediaRecorderRef.current.onstop = null;
         mediaRecorderRef.current.onstart = null;
         mediaRecorderRef.current.onerror = null;
-        
+
         mediaRecorderRef.current = null;
         console.log('MediaRecorder cleaned up successfully');
       } catch (error) {
         console.error('Error during MediaRecorder cleanup:', error);
       }
     }
-    
+
     // Step 2: Stop all media stream tracks immediately
     if (streamRef.current) {
       try {
         const tracks = streamRef.current.getTracks();
         console.log(`Cleanup: Found ${tracks.length} tracks to stop`);
-        
+
         tracks.forEach((track, index) => {
           console.log(`Stopping track ${index + 1}: ${track.kind} (${track.label})`);
           track.stop();
-          
+
           // Verify track is stopped
           if (track.readyState !== 'ended') {
             console.warn(`Track ${index + 1} may not have stopped properly`);
           }
         });
-        
+
         // Clear the stream reference immediately
         streamRef.current = null;
         console.log('All stream tracks stopped and cleared');
@@ -100,33 +125,33 @@ const StartPractice = () => {
         console.error('Error stopping stream tracks:', error);
       }
     }
-    
+
     // Step 3: Clean up video element thoroughly
     if (videoRef.current) {
       try {
         const video = videoRef.current;
-        
+
         // Pause and clear source
         video.pause();
         video.srcObject = null;
         video.src = '';
         video.removeAttribute('src');
-        
+
         // Clear any event listeners that might hold references
         video.onloadedmetadata = null;
         video.onplay = null;
         video.onpause = null;
         video.onended = null;
-        
+
         // Force reload to clear any cached streams
         video.load();
-        
+
         console.log('Video element cleaned up completely');
       } catch (error) {
         console.error('Error cleaning up video element:', error);
       }
     }
-    
+
     // Step 4: Stop speech recognition
     if (speechRecognitionRef.current) {
       try {
@@ -141,16 +166,16 @@ const StartPractice = () => {
         console.error('Error cleaning up speech recognition:', error);
       }
     }
-    
+
     // Step 5: Clear any remaining references
     recordedChunksRef.current = [];
-    
+
     // Step 6: Reset component state
     setIsRecording(false);
     setIsPaused(false);
     setIsListening(false);
     setIsCameraOn(false);
-    
+
     // Step 7: Force garbage collection hint (browser dependent)
     if (window.gc && typeof window.gc === 'function') {
       try {
@@ -160,7 +185,7 @@ const StartPractice = () => {
         console.log('Garbage collection not available:', error.message);
       }
     }
-    
+
     console.log('Comprehensive cleanup completed');
   }, []);
 
@@ -172,10 +197,10 @@ const StartPractice = () => {
       console.log('Safari detected - using enhanced camera management');
       toast.info('Safari detected: Enhanced camera privacy controls enabled');
     }
-    
+
     initializeCamera();
     initializeSpeechRecognition();
-    
+
     // Enhanced cleanup on page unload/reload
     const handleBeforeUnload = () => {
       console.log('Page unload detected - cleaning up camera resources');
@@ -186,25 +211,25 @@ const StartPractice = () => {
         // Synchronous delay to ensure cleanup
       }
     };
-    
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
         console.log('Page hidden - releasing camera resources');
         cleanup();
       }
     };
-    
+
     // Add event listeners for page unload and visibility change
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('unload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       // Remove event listeners
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('unload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      
+
       // Perform cleanup
       cleanup();
     };
@@ -215,7 +240,7 @@ const StartPractice = () => {
     try {
       // For Safari, be more explicit about constraints
       const constraints = {
-        video: { 
+        video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
           frameRate: { ideal: 30 }
@@ -225,20 +250,22 @@ const StartPractice = () => {
           noiseSuppression: true
         }
       };
-      
+
       console.log('Requesting camera access with constraints:', constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
-        
+        setIsCameraOn(true); // Set camera state to true
+
         // For Safari, ensure video starts playing
         videoRef.current.onloadedmetadata = () => {
           videoRef.current.play().catch(e => console.log('Video play failed:', e));
         };
-        
+
         console.log('Camera initialized successfully');
+        toast.success('Camera ready!');
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -251,7 +278,7 @@ const StartPractice = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       speechRecognitionRef.current = new SpeechRecognition();
-      
+
       speechRecognitionRef.current.continuous = true;
       speechRecognitionRef.current.interimResults = true;
       speechRecognitionRef.current.lang = 'en-US';
@@ -273,7 +300,7 @@ const StartPractice = () => {
         if (finalTranscript) {
           setCurrentAnswer(prev => prev + finalTranscript);
         }
-        
+
         // Show interim results separately
         setInterimTranscript(interimTranscript);
       };
@@ -292,9 +319,9 @@ const StartPractice = () => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
         setInterimTranscript('');
-        
+
         let errorMessage = 'Speech recognition failed. Please try again.';
-        switch(event.error) {
+        switch (event.error) {
           case 'network':
             errorMessage = 'Network error occurred. Please check your connection.';
             break;
@@ -336,13 +363,13 @@ const StartPractice = () => {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
-      
+
       // Request new camera stream
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720 },
         audio: true
       });
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
@@ -358,7 +385,7 @@ const StartPractice = () => {
   // Turn camera off - Aggressive approach for Safari/macOS
   const turnCameraOff = () => {
     console.log('Starting aggressive camera shutdown...');
-    
+
     // Step 1: Stop MediaRecorder immediately and aggressively
     if (mediaRecorderRef.current) {
       try {
@@ -377,12 +404,12 @@ const StartPractice = () => {
         console.error('Error stopping MediaRecorder:', error);
       }
     }
-    
+
     // Step 2: Aggressively stop all stream tracks
     if (streamRef.current) {
       const tracks = streamRef.current.getTracks();
       console.log('Found tracks to stop:', tracks.length);
-      
+
       tracks.forEach((track, index) => {
         console.log(`Stopping track ${index + 1}:`, track.kind, track.label, 'State:', track.readyState);
         try {
@@ -393,7 +420,7 @@ const StartPractice = () => {
         }
       });
     }
-    
+
     // Step 3: Clear video element completely
     if (videoRef.current) {
       try {
@@ -407,22 +434,22 @@ const StartPractice = () => {
         console.error('Error clearing video element:', error);
       }
     }
-    
+
     // Step 4: Clear stream reference and force cleanup
     streamRef.current = null;
     setIsCameraOn(false);
-    
+
     // Step 5: Clear any potential WebRTC connections
     if (window.RTCPeerConnection) {
       // Clear any potential peer connections that might hold camera references
       console.log('Clearing potential WebRTC connections...');
     }
-    
+
     // Step 6: Force garbage collection hint (doesn't guarantee but helps)
     if (window.gc) {
       window.gc();
     }
-    
+
     // Step 7: Verify camera release after a delay
     setTimeout(async () => {
       try {
@@ -430,17 +457,17 @@ const StartPractice = () => {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         console.log('Available video devices after shutdown:', videoDevices.length);
-        
+
         // Try to briefly access camera to confirm it's released
-        const testStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { width: 320, height: 240 } 
+        const testStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 320, height: 240 }
         });
-        
+
         // Immediately stop the test stream
         testStream.getTracks().forEach(track => track.stop());
         console.log('Camera verification: Successfully accessed and released camera');
         toast.success('Camera completely released - hardware light should be off');
-        
+
       } catch (error) {
         console.log('Camera verification failed:', error.message);
         if (error.name === 'NotAllowedError') {
@@ -450,7 +477,7 @@ const StartPractice = () => {
         }
       }
     }, 2000);
-    
+
     toast.info('Camera shutdown initiated - checking hardware light...');
   };
 
@@ -469,7 +496,7 @@ const StartPractice = () => {
       }
       toast.info('Recording stopped for camera shutdown');
     }
-    
+
     // Turn off camera with complete cleanup
     turnCameraOff();
     setShowCameraOffModal(false);
@@ -483,35 +510,49 @@ const StartPractice = () => {
     }
 
     try {
+      // Set states first to trigger UI update immediately
+      setHasStarted(true);
+      setIsRecording(true);
+      setSessionStartTime(new Date());
+      setCurrentQuestionIndex(0);
+
+      // Add first question to messages immediately
+      setMessages([{
+        type: 'question',
+        content: practiceQuestions[0],
+        timestamp: 0,
+        questionIndex: 0
+      }]);
+
       // Clear any previous recording data
       recordedChunksRef.current = [];
-      
+
       // Find the best supported MIME type
       let mimeType = 'video/webm;codecs=vp9,opus';
       const supportedTypes = [
         'video/webm;codecs=vp9,opus',
-        'video/webm;codecs=vp8,opus', 
+        'video/webm;codecs=vp8,opus',
         'video/webm;codecs=h264,opus',
         'video/webm',
         'video/mp4;codecs=h264,aac',
         'video/mp4'
       ];
-      
+
       for (const type of supportedTypes) {
         if (MediaRecorder.isTypeSupported(type)) {
           mimeType = type;
           break;
         }
       }
-      
+
       console.log('Using MIME type:', mimeType);
-      
-      const mediaRecorder = new MediaRecorder(streamRef.current, { 
+
+      const mediaRecorder = new MediaRecorder(streamRef.current, {
         mimeType,
         videoBitsPerSecond: 1000000, // 1Mbps
         audioBitsPerSecond: 128000   // 128kbps
       });
-      
+
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -524,7 +565,7 @@ const StartPractice = () => {
 
       mediaRecorder.onstop = () => {
         console.log('MediaRecorder stopped. Final chunk count:', recordedChunksRef.current.length);
-        
+
         // Request final data if available
         if (mediaRecorder.state === 'inactive' && recordedChunksRef.current.length === 0) {
           console.warn('No data chunks were recorded during the session');
@@ -546,21 +587,14 @@ const StartPractice = () => {
 
       // Start recording with smaller timeslices for better data capture
       mediaRecorder.start(500); // Capture data every 500ms
-      setIsRecording(true);
-      setSessionStartTime(new Date());
-      setHasStarted(true);
-      
-      // Add first question to messages
-      setMessages([{ 
-        type: 'question', 
-        content: practiceQuestions[0], 
-        timestamp: 0,
-        questionIndex: 0
-      }]);
 
     } catch (error) {
       console.error('Error starting recording:', error);
       toast.error('Failed to start recording: ' + error.message);
+      // Reset states if recording fails
+      setIsRecording(false);
+      setHasStarted(false);
+      setMessages([]);
     }
   };
 
@@ -592,13 +626,13 @@ const StartPractice = () => {
           toast.success('Recording stopped');
           resolve();
         };
-        
+
         mediaRecorderRef.current.addEventListener('stop', handleStop);
-        
+
         // Request final data before stopping
         if (mediaRecorderRef.current.state === 'recording') {
           mediaRecorderRef.current.requestData();
-          
+
           // Stop the recording
           setTimeout(() => {
             if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -671,7 +705,7 @@ const StartPractice = () => {
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
       setCurrentAnswer('');
-      
+
       // Add next question to messages
       setMessages(prev => [...prev, {
         type: 'question',
@@ -679,13 +713,13 @@ const StartPractice = () => {
         timestamp: timestamp + 1000,
         questionIndex: nextIndex
       }]);
-      
+
       toast.success(`Question ${nextIndex + 1} of ${practiceQuestions.length}`);
     } else {
       // All questions completed - mark session as completed and show end session modal
       setIsSessionCompleted(true);
       toast.success('Practice session completed!');
-      
+
       // Stop recording and wait for it to complete
       if (isRecording) {
         stopRecording().then(() => {
@@ -707,11 +741,11 @@ const StartPractice = () => {
   const emergencyCameraShutdown = useCallback(async () => {
     console.log('EMERGENCY CAMERA SHUTDOWN - Enhanced Version');
     toast.warning('Emergency camera shutdown initiated');
-    
+
     try {
       // Call comprehensive cleanup first
       cleanup();
-      
+
       // Force stop everything aggressively
       if (mediaRecorderRef.current) {
         try {
@@ -722,7 +756,7 @@ const StartPractice = () => {
           console.log('MediaRecorder emergency stop:', e);
         }
       }
-      
+
       // Stop all tracks from stream ref
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => {
@@ -730,7 +764,7 @@ const StartPractice = () => {
           track.enabled = false;
         });
       }
-      
+
       // Clear video completely
       if (videoRef.current) {
         videoRef.current.pause();
@@ -739,16 +773,16 @@ const StartPractice = () => {
         videoRef.current.removeAttribute('src');
         videoRef.current.load();
       }
-      
+
       // Clear all refs
       streamRef.current = null;
       mediaRecorderRef.current = null;
-      
+
       // Reset all states
       setIsCameraOn(false);
       setIsRecording(false);
       setIsPaused(false);
-      
+
       // Try to get new stream and immediately stop it (forces Safari to release)
       try {
         const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -760,7 +794,7 @@ const StartPractice = () => {
       } catch (e) {
         console.log('Emergency: Could not create temp stream (might be good news):', e.message);
       }
-      
+
       // Verify camera release after delay
       setTimeout(async () => {
         try {
@@ -770,9 +804,9 @@ const StartPractice = () => {
           console.log('Emergency verification: Device enumeration failed:', error.message);
         }
       }, 1000);
-      
+
       toast.success('Emergency camera shutdown completed - check hardware light');
-      
+
     } catch (error) {
       console.error('Emergency shutdown failed:', error);
       toast.error('Emergency shutdown encountered errors');
@@ -793,10 +827,10 @@ const StartPractice = () => {
 
       // Create and download JSON file
       const dataStr = JSON.stringify(exportData, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-      
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
       const exportFileDefaultName = `practice_session_${new Date().toISOString().split('T')[0]}.json`;
-      
+
       const linkElement = document.createElement('a');
       linkElement.setAttribute('href', dataUri);
       linkElement.setAttribute('download', exportFileDefaultName);
@@ -807,23 +841,23 @@ const StartPractice = () => {
       // Export video if available
       if (recordedChunksRef.current && recordedChunksRef.current.length > 0) {
         console.log('Preparing video export with', recordedChunksRef.current.length, 'chunks');
-        
+
         // Calculate total size
         const totalSize = recordedChunksRef.current.reduce((total, chunk) => total + chunk.size, 0);
         console.log('Total video data size:', totalSize, 'bytes');
-        
+
         if (totalSize > 0) {
           // Determine MIME type from the first chunk
           const firstChunk = recordedChunksRef.current[0];
           let mimeType = firstChunk.type || 'video/webm';
-          
+
           // Create blob with explicit MIME type
           const blob = new Blob(recordedChunksRef.current, { type: mimeType });
           console.log('Video blob created - Size:', blob.size, 'Type:', blob.type);
-          
+
           if (blob.size > 0) {
             const videoUrl = URL.createObjectURL(blob);
-            
+
             // Determine file extension based on MIME type
             let extension = 'webm';
             if (mimeType.includes('mp4')) {
@@ -831,20 +865,20 @@ const StartPractice = () => {
             } else if (mimeType.includes('webm')) {
               extension = 'webm';
             }
-            
+
             const videoLink = document.createElement('a');
             videoLink.href = videoUrl;
             videoLink.download = `practice_video_${new Date().toISOString().split('T')[0]}.${extension}`;
             videoLink.style.display = 'none';
             document.body.appendChild(videoLink);
-            
+
             // Trigger download
             videoLink.click();
-            
+
             // Cleanup
             document.body.removeChild(videoLink);
             setTimeout(() => URL.revokeObjectURL(videoUrl), 5000);
-            
+
             toast.success('Session data and video exported successfully!');
           } else {
             console.warn('Video blob is empty despite having chunks');
@@ -870,12 +904,12 @@ const StartPractice = () => {
     if (isRecording) {
       await stopRecording();
     }
-    
+
     // Stop speech recognition
     if (speechRecognitionRef.current && isListening) {
       speechRecognitionRef.current.stop();
     }
-    
+
     // Reset all states
     setIsRecording(false);
     setIsPaused(false);
@@ -890,10 +924,10 @@ const StartPractice = () => {
     setIsSessionCompleted(false);
     setShowChatPopup(false);
     setInterimTranscript('');
-    
+
     // Clear recorded chunks
     recordedChunksRef.current = [];
-    
+
     // Reset media recorder
     if (mediaRecorderRef.current) {
       if (mediaRecorderRef.current.state !== 'inactive') {
@@ -901,14 +935,14 @@ const StartPractice = () => {
       }
       mediaRecorderRef.current = null;
     }
-    
+
     // Reset camera state and reinitialize if needed
     if (!isCameraOn) {
       setIsCameraOn(true);
       // Reinitialize camera
       await initializeCamera();
     }
-    
+
     toast.info('Session reset successfully!');
   };
 
@@ -938,405 +972,472 @@ const StartPractice = () => {
   }, [messages]);
 
   return (
-    <div className="h-screen transparent-window relative overflow-hidden">
-      {/* Video Background - Full Screen */}
-      <div className="absolute inset-0">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover"
-        />
-        
-        {/* Camera Off Overlay */}
-        {!isCameraOn && (
-          <div className="absolute inset-0 practice-glass-dark flex items-center justify-center">
-            <div className="text-center text-white glass-panel p-8">
-              <Icon icon="lucide:video-off" className="w-16 h-16 mx-auto mb-4 opacity-75" />
-              <p className="text-lg font-medium">Camera is turned off</p>
-              <p className="text-sm opacity-60 mt-2">Camera access has been released</p>
-            </div>
-          </div>
-        )}
-      </div>
+    <div className="practice-page min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-4">
+        <div className="flex flex-col lg:flex-row gap-4" style={{ minHeight: '80vh' }}>
+          {/* Left Side - Video Panel - Always Visible */}
+          <div className="w-full lg:w-1/2 practice-video-panel-always-visible">
+            {/* Video Card */}
+            <div className="w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200" style={{ height: 'fit-content' }}>
+              {/* Card Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Icon icon="lucide:video" className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-base">Camera Feed</h3>
+                    <p className="text-blue-50 text-xs">Live Recording</p>
+                  </div>
+                </div>
 
-      {/* Timer - Top Left Corner */}
-      {sessionStartTime && (
-        <div className="absolute top-4 left-4 z-20">
-          <div className="practice-glass-dark text-white px-4 py-2 rounded-lg font-mono text-lg shadow-lg">
-            {formatTime(currentVideoTime)}
-          </div>
-        </div>
-      )}
-
-      {/* Question Counter - Top Right Corner */}
-      {hasStarted && (
-        <div className="absolute top-4 right-4 z-20">
-          <div className="practice-glass-light text-white px-4 py-2 rounded-lg font-semibold shadow-lg">
-            {currentQuestionIndex + 1}/{practiceQuestions.length}
-          </div>
-        </div>
-      )}
-
-      {/* Controls Panel - Top Right Corner (below counter) */}
-      <div className="absolute top-20 right-4 z-20 flex flex-col space-y-2">
-        {/* Camera Toggle */}
-        <button
-          onClick={toggleCamera}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all glass-button ${
-            isCameraOn 
-              ? 'bg-green-500 bg-opacity-30 hover:bg-opacity-40 border-green-400' 
-              : 'bg-red-500 bg-opacity-30 hover:bg-opacity-40 border-red-400'
-          } text-white shadow-lg`}
-          title={isCameraOn ? "Turn Camera Off" : "Turn Camera On"}
-        >
-          <Icon icon={isCameraOn ? "lucide:video" : "lucide:video-off"} className="w-6 h-6" />
-        </button>
-
-        {/* Recording Controls */}
-        {!isRecording ? (
-          <button
-            onClick={startRecording}
-            disabled={!isCameraOn}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all text-white shadow-lg ${
-              isCameraOn 
-                ? 'glass-button bg-red-500 bg-opacity-30 hover:bg-opacity-40 border-red-400' 
-                : 'bg-gray-500 bg-opacity-20 cursor-not-allowed border-gray-400'
-            }`}
-            title={isCameraOn ? "Start Recording" : "Camera must be on to start recording"}
-          >
-            <Icon icon="lucide:circle" className="w-6 h-6" />
-          </button>
-        ) : (
-          <>
-            <button
-              onClick={togglePause}
-              className="w-12 h-12 rounded-full glass-button bg-yellow-500 bg-opacity-30 hover:bg-opacity-40 border-yellow-400 text-white transition-all shadow-lg flex items-center justify-center"
-              title={isPaused ? "Resume Recording" : "Pause Recording"}
-            >
-              <Icon icon={isPaused ? "lucide:play" : "lucide:pause"} className="w-6 h-6" />
-            </button>
-            <button
-              onClick={stopRecording}
-              className="w-12 h-12 rounded-full glass-button bg-gray-500 bg-opacity-30 hover:bg-opacity-40 border-gray-400 text-white transition-all shadow-lg flex items-center justify-center"
-              title="Stop Recording"
-            >
-              <Icon icon="lucide:square" className="w-6 h-6" />
-            </button>
-          </>
-        )}
-
-        {/* End Session */}
-        {hasStarted && (
-          <button
-            onClick={() => setShowEndSessionModal(true)}
-            className="w-12 h-12 rounded-full glass-button bg-red-600 bg-opacity-30 hover:bg-opacity-40 border-red-400 text-white transition-all shadow-lg flex items-center justify-center"
-            title="End Session"
-          >
-            <Icon icon="lucide:power" className="w-6 h-6" />
-          </button>
-        )}
-
-        {/* Debug Controls */}
-        {hasStarted && (
-          <>
-            <button
-              onClick={exportSessionData}
-              className="w-12 h-12 rounded-full glass-button bg-blue-500 bg-opacity-30 hover:bg-opacity-40 border-blue-400 text-white transition-all shadow-lg flex items-center justify-center"
-              title="Export Data"
-            >
-              <Icon icon="lucide:download" className="w-6 h-6" />
-            </button>
-            
-            <button
-              onClick={emergencyCameraShutdown}
-              className="w-12 h-12 rounded-full glass-button bg-red-700 bg-opacity-40 hover:bg-opacity-50 border-red-500 text-white transition-all shadow-lg flex items-center justify-center border-2"
-              title="Emergency Camera Shutdown"
-            >
-              <Icon icon="lucide:alert-triangle" className="w-6 h-6" />
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Chat Popup Button - Bottom Right Corner */}
-      <button
-        onClick={() => setShowChatPopup(!showChatPopup)}
-        className="absolute bottom-4 right-4 z-20 w-14 h-14 rounded-full glass-button bg-purple-500 bg-opacity-30 hover:bg-opacity-40 border-purple-400 text-white shadow-lg flex items-center justify-center transition-all"
-        title="Toggle Chat History"
-      >
-        <Icon icon="lucide:message-circle" className="w-7 h-7" />
-        {messages.length > 0 && (
-          <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full text-xs flex items-center justify-center">
-            {messages.length}
-          </div>
-        )}
-      </button>
-
-      {/* Answer Input Area with Glass Effect - Bottom Center */}
-      {hasStarted && currentQuestionIndex < practiceQuestions.length && (
-        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 max-w-4xl w-full px-4">
-          <div className="glass-panel p-4">
-            {/* Current Question Display */}
-            <div className="mb-4 p-3 practice-glass-dark rounded-lg">
-              <div className="flex items-start space-x-3">
-                <Icon icon="lucide:help-circle" className="w-5 h-5 text-blue-300 mt-1 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-blue-200 mb-1">Question {currentQuestionIndex + 1} of {practiceQuestions.length}:</p>
-                  <p className="text-white text-sm">{practiceQuestions[currentQuestionIndex]}</p>
+                {/* Timer and Emergency Controls */}
+                <div className="flex items-center space-x-2">
+                  {sessionStartTime && hasStarted && (
+                    <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                      <Icon icon="lucide:clock" className="w-3.5 h-3.5 text-white" />
+                      <span className="text-white font-mono text-sm font-bold">{formatTime(currentVideoTime)}</span>
+                      {isRecording && <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>}
+                    </div>
+                  )}
+                  {hasStarted && (
+                    <button
+                      onClick={emergencyCameraShutdown}
+                      className="p-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white transition-all"
+                      title="Emergency shutdown"
+                    >
+                      <Icon icon="lucide:power-off" className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="relative">
-              <textarea
-                value={currentAnswer + interimTranscript}
-                onChange={(e) => setCurrentAnswer(e.target.value.replace(interimTranscript, ''))}
-                placeholder="Type your answer here or use speech-to-text..."
-                className="w-full p-4 bg-white bg-opacity-90 border border-white border-opacity-50 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none text-lg backdrop-blur-sm"
-                rows={3}
-              />
-              
-              {/* Interim transcript styling */}
-              {interimTranscript && (
-                <div className="absolute bottom-4 right-16 text-gray-500 italic text-sm pointer-events-none bg-white bg-opacity-75 px-2 py-1 rounded">
-                  Speaking: {interimTranscript}
-                </div>
-              )}
-              
-              {/* Speech Recognition Button */}
-              <button
-                onClick={toggleSpeechRecognition}
-                className={`absolute top-3 right-3 w-10 h-10 rounded-full transition-colors flex items-center justify-center ${
-                  isListening 
-                    ? 'bg-red-500 text-white animate-pulse speech-listening' 
-                    : 'bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-600'
-                }`}
-                title={isListening ? 'Stop listening' : 'Start speech recognition'}
-              >
-                <Icon icon="lucide:mic" className="w-5 h-5" />
-              </button>
-            </div>
+              {/* Video Area */}
+              <div className="relative bg-black" style={{ aspectRatio: '16/9', width: '100%' }}>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                  style={{ display: 'block' }}
+                />
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-white">
-                {isListening && (
-                  <span className="flex items-center space-x-2 bg-black bg-opacity-30 px-3 py-1 rounded-full">
-                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                    <span>Listening...</span>
-                  </span>
+                {/* Camera Off Overlay */}
+                {!isCameraOn && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-gray-700/50 flex items-center justify-center">
+                        <Icon icon="lucide:video-off" className="w-10 h-10 text-gray-400" />
+                      </div>
+                      <p className="text-base font-medium text-gray-300">Camera is off</p>
+                      <p className="text-xs text-gray-500 mt-1">Click the camera button to turn it on</p>
+                    </div>
+                  </div>
                 )}
               </div>
-              
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    setCurrentAnswer('');
-                    setInterimTranscript('');
-                  }}
-                  className="px-4 py-2 text-white bg-white bg-opacity-20 border border-white border-opacity-50 rounded-lg hover:bg-opacity-30 backdrop-blur-sm transition-colors"
-                >
-                  Clear
-                </button>
-                <button
-                  onClick={submitAnswer}
-                  disabled={!currentAnswer.trim()}
-                  className="px-6 py-2 bg-blue-600 bg-opacity-90 text-white rounded-lg hover:bg-opacity-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 backdrop-blur-sm transition-colors"
-                >
-                  <span>Submit Answer</span>
-                  <Icon icon="lucide:send" className="w-4 h-4" />
-                </button>
+
+              {/* Card Footer - Video Controls */}
+              <div className="bg-white px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  {/* Left Side - Basic Controls */}
+                  <div className="flex items-center space-x-2">
+                    {/* Camera Toggle */}
+                    <button
+                      onClick={toggleCamera}
+                      className={`p-2.5 rounded-xl transition-all shadow-sm ${isCameraOn
+                          ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                        }`}
+                      title={isCameraOn ? 'Turn camera off' : 'Turn camera on'}
+                    >
+                      <Icon
+                        icon={isCameraOn ? 'lucide:video' : 'lucide:video-off'}
+                        className="w-5 h-5"
+                      />
+                    </button>
+
+                    {/* Microphone / Speech Recognition */}
+                    <button
+                      onClick={toggleSpeechRecognition}
+                      className={`p-2.5 rounded-xl transition-all shadow-sm ${isListening
+                          ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+                        }`}
+                      title={isListening ? 'Stop listening' : 'Start speech recognition'}
+                    >
+                      <Icon icon="lucide:mic" className="w-5 h-5" />
+                    </button>
+
+                    {/* Pause/Resume (only when recording) */}
+                    {isRecording && (
+                      <button
+                        onClick={togglePause}
+                        className="p-2.5 bg-yellow-500 hover:bg-yellow-600 rounded-xl text-white transition-all shadow-sm"
+                        title={isPaused ? 'Resume' : 'Pause'}
+                      >
+                        <Icon
+                          icon={isPaused ? 'lucide:play' : 'lucide:pause'}
+                          className="w-5 h-5"
+                        />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Center/Right - Recording Controls */}
+                  <div className="flex items-center space-x-3">
+                    {/* Recording Status */}
+                    {isRecording && (
+                      <div className="flex items-center space-x-2 px-3 py-1.5 bg-red-50 rounded-lg border border-red-200">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-red-700 text-xs font-bold uppercase">
+                          {isPaused ? 'Paused' : 'Recording'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Main Recording Button */}
+                    {!isRecording ? (
+                      <button
+                        onClick={startRecording}
+                        disabled={!isCameraOn}
+                        className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center space-x-2 text-sm ${isCameraOn
+                            ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg transform hover:scale-105'
+                            : 'bg-gray-300 cursor-not-allowed text-gray-500'
+                          }`}
+                        title={isCameraOn ? 'Start recording' : 'Camera must be on'}
+                      >
+                        <Icon icon="lucide:circle" className="w-4 h-4" />
+                        <span>Start Recording</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={stopRecording}
+                        className="px-5 py-2.5 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black rounded-xl text-white transition-all font-bold shadow-lg flex items-center space-x-2 text-sm"
+                        title="Stop recording"
+                      >
+                        <Icon icon="lucide:square" className="w-4 h-4" />
+                        <span>Stop Recording</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Welcome Screen */}
-      {!hasStarted && (
-        <div className="absolute inset-0 practice-glass-ultra flex items-center justify-center z-10">
-          <div className="text-center text-white max-w-2xl px-4">
-            <Icon icon="lucide:video" className="w-20 h-20 mx-auto mb-6 text-blue-400" />
-            <h1 className="text-4xl font-bold mb-4">Practice Session</h1>
-            <p className="text-xl mb-8">Ready to start your interview practice?</p>
-            <div className="glass-panel p-6 text-left">
-              <h3 className="font-semibold text-blue-300 mb-4 text-center">What you'll practice:</h3>
-              <ul className="space-y-2">
-                <li className="flex items-center space-x-3">
-                  <Icon icon="lucide:check" className="w-5 h-5 text-green-400" />
-                  <span>{practiceQuestions.length} interview questions</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Icon icon="lucide:check" className="w-5 h-5 text-green-400" />
-                  <span>Video recording with timestamps</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Icon icon="lucide:check" className="w-5 h-5 text-green-400" />
-                  <span>Speech-to-text for answers</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Icon icon="lucide:check" className="w-5 h-5 text-green-400" />
-                  <span>Session data for analysis</span>
-                </li>
-              </ul>
+          {/* Right Side - Questions & Answers Panel - Always Visible */}
+          <div className="w-full lg:w-1/2 bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200 practice-qa-panel-always-visible" style={{ maxHeight: '90vh' }}>
+            {/* Header - Session Info */}
+            <div className="bg-white border-b-2 border-gray-200 px-6 py-4 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Practice Interview</h2>
+                  {hasStarted && (
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Icon icon="lucide:message-square-text" className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm text-gray-600">
+                        Question {currentQuestionIndex + 1} of {practiceQuestions.length}
+                      </span>
+                      <div className="w-32 h-1.5 bg-gray-200 rounded-full ml-2 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-500 rounded-full"
+                          style={{ width: `${((currentQuestionIndex + 1) / practiceQuestions.length) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {hasStarted && (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={exportSessionData}
+                      className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all text-gray-900 border border-gray-300"
+                      title="Export Data"
+                    >
+                      <Icon icon="lucide:download" className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setShowEndSessionModal(true)}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-all text-white font-medium flex items-center space-x-2"
+                      title="End Session"
+                    >
+                      <Icon icon="lucide:log-out" className="w-4 h-4" />
+                      <span>End</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Session Complete Overlay */}
-      {hasStarted && currentQuestionIndex >= practiceQuestions.length && (
-        <div className="absolute inset-0 practice-glass-dark flex items-center justify-center z-10">
-          <div className="text-center text-white max-w-2xl px-4">
-            <Icon icon="lucide:check-circle" className="w-20 h-20 text-green-400 mx-auto mb-6" />
-            <h2 className="text-3xl font-bold mb-4">Practice Session Complete!</h2>
-            <p className="text-xl mb-6">
-              You've answered all {practiceQuestions.length} questions. Great job!
-            </p>
-            <div className="glass-panel p-6 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-sm opacity-75">Duration</p>
-                  <p className="text-xl font-semibold">{formatTime(currentVideoTime)}</p>
-                </div>
-                <div>
-                  <p className="text-sm opacity-75">Questions</p>
-                  <p className="text-xl font-semibold">{sessionData.length}/{practiceQuestions.length}</p>
-                </div>
-                <div>
-                  <p className="text-sm opacity-75">Average Time</p>
-                  <p className="text-xl font-semibold">
-                    {sessionData.length > 0 ? formatTime(sessionData.reduce((acc, item) => acc + (item.timestamp / sessionData.length), 0)) : '0:00'}
+            {/* Main Content Area */}
+            {!hasStarted ? (
+              /* Welcome Screen */
+              <div className="flex-1 flex items-center justify-center p-8">
+                <div className="text-center text-gray-900 max-w-lg">
+                  <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-lg">
+                    <Icon icon="lucide:video" className="w-12 h-12 text-white" />
+                  </div>
+
+                  <h1 className="text-3xl font-bold mb-3 text-gray-900">Ready to Start?</h1>
+                  <p className="text-lg text-gray-600 mb-6">
+                    Prepare yourself for your practice interview session
                   </p>
+
+                  <div className="bg-gray-50 rounded-xl p-5 mb-6 border border-gray-200">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <Icon icon="lucide:list" className="w-4 h-4 text-blue-600" />
+                        <span className="text-gray-700">{practiceQuestions.length} Questions</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Icon icon="lucide:video" className="w-4 h-4 text-blue-600" />
+                        <span className="text-gray-700">Video Recording</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Icon icon="lucide:mic" className="w-4 h-4 text-blue-600" />
+                        <span className="text-gray-700">Speech-to-Text</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Icon icon="lucide:bar-chart" className="w-4 h-4 text-blue-600" />
+                        <span className="text-gray-700">Analytics</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={startRecording}
+                    disabled={!isCameraOn}
+                    className={`px-8 py-3 rounded-xl font-bold text-base transition-all flex items-center space-x-2 mx-auto shadow-lg ${isCameraOn
+                        ? 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white transform hover:scale-105'
+                        : 'bg-gray-200 cursor-not-allowed text-gray-400 border border-gray-300'
+                      }`}
+                  >
+                    <Icon icon="lucide:play-circle" className="w-5 h-5" />
+                    <span>Start Practice Session</span>
+                  </button>
+
+                  {!isCameraOn && (
+                    <p className="text-red-600 text-sm mt-3 flex items-center justify-center space-x-1">
+                      <Icon icon="lucide:alert-circle" className="w-4 h-4" />
+                      <span>Camera must be on to start</span>
+                    </p>
+                  )}
                 </div>
               </div>
-            </div>
-            <button
-              onClick={exportSessionData}
-              className="px-8 py-3 glass-button bg-green-500 bg-opacity-30 border-green-400 text-white rounded-lg hover:bg-opacity-40 flex items-center space-x-2 mx-auto transition-all text-lg"
-            >
-              <Icon icon="lucide:download" className="w-5 h-5" />
-              <span>Download Session Data</span>
-            </button>
-          </div>
-        </div>
-      )}
+            ) : (isSessionCompleted || currentQuestionIndex >= practiceQuestions.length) ? (
+              /* Session Complete Screen */
+              <div className="flex-1 flex items-center justify-center p-8">
+                <div className="text-center text-gray-900 max-w-lg">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-600 flex items-center justify-center shadow-lg">
+                    <Icon icon="lucide:check-circle" className="w-10 h-10 text-white" />
+                  </div>
 
-      {/* Chat Popup */}
-      {showChatPopup && (
-        <div className="absolute right-4 bottom-20 w-80 md:w-96 h-96 z-30">
-          <div className="glass-panel h-full flex flex-col">
-            {/* Chat Header */}
-            <div className="bg-purple-600 bg-opacity-60 backdrop-blur-md text-white p-4 rounded-t-lg flex items-center justify-between border-b border-white border-opacity-10">
-              <h3 className="font-semibold text-white">Session History</h3>
-              <button
-                onClick={() => setShowChatPopup(false)}
-                className="text-white hover:text-gray-200 transition-colors"
-              >
-                <Icon icon="lucide:x" className="w-5 h-5" />
-              </button>
-            </div>
+                  <h2 className="text-3xl font-bold mb-3 text-gray-900">Great Job!</h2>
+                  <p className="text-lg text-gray-600 mb-6">
+                    You've completed all {practiceQuestions.length} questions
+                  </p>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.length === 0 ? (
-                <div className="text-center text-white py-8">
-                  <Icon icon="lucide:message-circle" className="w-12 h-12 mx-auto mb-2 opacity-70" />
-                  <p className="text-white opacity-80">No messages yet</p>
+                  <div className="grid grid-cols-3 gap-3 mb-6">
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <Icon icon="lucide:clock" className="w-6 h-6 text-blue-600 mx-auto mb-1" />
+                      <p className="text-xs text-gray-600 mb-0.5">Duration</p>
+                      <p className="text-lg font-bold text-gray-900">{formatTime(currentVideoTime)}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <Icon icon="lucide:check-circle" className="w-6 h-6 text-green-600 mx-auto mb-1" />
+                      <p className="text-xs text-gray-600 mb-0.5">Answered</p>
+                      <p className="text-lg font-bold text-gray-900">{sessionData.length}/{practiceQuestions.length}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <Icon icon="lucide:bar-chart-2" className="w-6 h-6 text-purple-600 mx-auto mb-1" />
+                      <p className="text-xs text-gray-600 mb-0.5">Messages</p>
+                      <p className="text-lg font-bold text-gray-900">{messages.length}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={exportSessionData}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all flex items-center space-x-2 mx-auto font-semibold shadow-lg"
+                  >
+                    <Icon icon="lucide:download" className="w-5 h-5" />
+                    <span>Download Session Data</span>
+                  </button>
                 </div>
-              ) : (
-                messages.map((message, index) => (
-                  <div key={index} className={`${message.type === 'answer' ? 'text-right' : 'text-left'}`}>
-                    <div className={`inline-block max-w-[80%] p-3 rounded-lg backdrop-blur-sm border border-opacity-30 ${
-                      message.type === 'question' 
-                        ? 'bg-blue-600 bg-opacity-20 text-white border-blue-400' 
-                        : 'bg-green-600 bg-opacity-20 text-white border-green-400'
-                    }`}>
-                      <p className="text-sm font-medium mb-1 opacity-90">
-                        {message.type === 'question' ? 'Question' : 'Your Answer'}
+              </div>
+            ) : (
+              /* Active Session - Question & Answer */
+              <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+                {/* Current Question Banner */}
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 border-b-2 border-blue-700 flex-shrink-0">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                      <Icon icon="lucide:help-circle" className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-blue-50 font-semibold mb-1 uppercase">
+                        Current Question
                       </p>
-                      <p className="text-sm">{message.content}</p>
-                      <p className="text-xs mt-1 opacity-60 font-mono">
-                        {formatTime(message.timestamp)}
+                      <p className="text-white text-base font-medium leading-snug">
+                        {practiceQuestions[currentQuestionIndex]}
                       </p>
                     </div>
                   </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+                </div>
+
+                {/* Chat History / Messages - Scrollable Area */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 min-h-0" style={{ maxHeight: '40vh' }}>
+                  <div className="flex items-center space-x-2 mb-2 sticky top-0 bg-gray-50 py-2 z-10 border-b border-gray-200">
+                    <Icon icon="lucide:message-square" className="w-4 h-4 text-gray-600" />
+                    <h3 className="text-xs font-semibold text-gray-600 uppercase">Session History</h3>
+                    <span className="text-xs text-gray-500">({messages.length})</span>
+                  </div>
+
+                  {messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mb-3">
+                        <Icon icon="lucide:message-square" className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 text-sm">No messages yet</p>
+                      <p className="text-gray-400 text-xs mt-1">Your conversation will appear here</p>
+                    </div>
+                  ) : (
+                    messages.map((message, index) => (
+                      <div key={index} className="animate-fade-in">
+                        <div className={`rounded-xl p-3 border-2 ${message.type === 'question'
+                            ? 'bg-blue-50 border-blue-200'
+                            : 'bg-green-50 border-green-200'
+                          }`}>
+                          <div className="flex items-center space-x-2 mb-1.5">
+                            <Icon
+                              icon={message.type === 'question' ? 'lucide:help-circle' : 'lucide:user'}
+                              className={`w-3.5 h-3.5 ${message.type === 'question' ? 'text-blue-600' : 'text-green-600'}`}
+                            />
+                            <span className={`text-xs font-semibold uppercase ${message.type === 'question' ? 'text-blue-700' : 'text-green-700'}`}>
+                              {message.type === 'question' ? 'Question' : 'Your Answer'}
+                            </span>
+                            <span className="text-xs text-gray-500 ml-auto font-mono">
+                              {formatTime(message.timestamp)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-900 leading-relaxed">{message.content}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Answer Input Area - Fixed at Bottom */}
+                <div className="bg-white p-4 border-t-2 border-gray-200 flex-shrink-0">
+                  <div className="mb-3">
+                    <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase">
+                      Your Answer
+                    </label>
+                    <textarea
+                      value={currentAnswer + interimTranscript}
+                      onChange={(e) => setCurrentAnswer(e.target.value.replace(interimTranscript, ''))}
+                      placeholder="Type your answer here or use the microphone..."
+                      className="w-full bg-white text-gray-900 placeholder-gray-400 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm border-2 border-gray-300"
+                      rows={4}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3 text-xs">
+                      {isListening && (
+                        <span className="flex items-center space-x-1.5 text-red-600">
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <span>Listening...</span>
+                        </span>
+                      )}
+                      {interimTranscript && (
+                        <span className="text-gray-500 italic max-w-xs truncate">"{interimTranscript}"</span>
+                      )}
+                      <span className="text-gray-500">{currentAnswer.length} chars</span>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => {
+                          setCurrentAnswer('');
+                          setInterimTranscript('');
+                        }}
+                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg transition-all text-xs font-medium border border-gray-300"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        onClick={submitAnswer}
+                        disabled={!currentAnswer.trim()}
+                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center space-x-1.5 text-xs font-semibold"
+                      >
+                        <span>Submit</span>
+                        <Icon icon="lucide:send" className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Recording Status Indicator */}
-      {isRecording && (
-        <div className="absolute bottom-4 left-4 z-20">
-          <div className="bg-red-600 bg-opacity-90 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center space-x-2 border border-red-400 border-opacity-50">
-            <div className="w-3 h-3 bg-white rounded-full animate-pulse recording-pulse"></div>
-            <span className="font-medium">
-              {isPaused ? 'Paused' : 'Recording'}
-            </span>
-            <span className="text-sm opacity-75">
-              {recordedChunksRef.current?.length || 0} chunks
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* End Session Modal */}
+      {/* Modals */}
       {showEndSessionModal && (
-        <div className="fixed inset-0 practice-glass-ultra flex items-center justify-center z-50">
-          <div className="glass-panel p-6 max-w-md w-full mx-4 text-white">
-            <div className="flex items-center mb-4">
-              <Icon icon="lucide:alert-triangle" className="w-6 h-6 text-red-400 mr-3" />
-              <h3 className="text-lg font-semibold">End Practice Session</h3>
-            </div>
-            
-            <p className="text-gray-200 mb-6">
-              Are you sure you want to end this practice session? You can choose to export your data before ending.
-            </p>
-            
-            <div className="flex flex-col space-y-3">
-              <button
-                onClick={async () => {
-                  // Stop recording if still active
-                  if (isRecording) {
-                    await stopRecording();
-                  }
-                  await exportSessionData();
-                  resetSession();
-                  setShowEndSessionModal(false);
-                }}
-                className="w-full px-4 py-2 glass-button bg-blue-500 bg-opacity-30 border-blue-400 text-white rounded-lg hover:bg-opacity-40 flex items-center justify-center space-x-2"
-              >
-                <Icon icon="lucide:download" className="w-4 h-4" />
-                <span>Export Data & End Session</span>
-              </button>
-              
-              <button
-                onClick={async () => {
-                  // Stop recording if still active
-                  if (isRecording) {
-                    await stopRecording();
-                  }
-                  resetSession();
-                  setShowEndSessionModal(false);
-                }}
-                className="w-full px-4 py-2 glass-button bg-red-500 bg-opacity-30 border-red-400 text-white rounded-lg hover:bg-opacity-40 flex items-center justify-center space-x-2"
-              >
-                <Icon icon="lucide:x" className="w-4 h-4" />
-                <span>Just End Session</span>
-              </button>
-              
-              <button
-                onClick={() => setShowEndSessionModal(false)}
-                className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-              >
-                Cancel
-              </button>
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 animate-fade-in">
+          <div className="relative max-w-lg w-full mx-6">
+            <div className="bg-white rounded-2xl p-8 shadow-2xl border-2 border-gray-200">
+              <div className="flex items-center mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center mr-4 shadow-lg">
+                  <Icon icon="lucide:alert-triangle" className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">End Practice Session</h3>
+              </div>
+
+              <p className="text-gray-700 mb-8 leading-relaxed text-lg">
+                Are you sure you want to end this practice session? You can choose to export your data before ending.
+              </p>
+
+              <div className="flex flex-col space-y-3">
+                <button
+                  onClick={async () => {
+                    if (isRecording) {
+                      await stopRecording();
+                    }
+                    await exportSessionData();
+                    resetSession();
+                    setShowEndSessionModal(false);
+                  }}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 flex items-center justify-center space-x-3 transition-all shadow-lg"
+                >
+                  <Icon icon="lucide:download" className="w-5 h-5" />
+                  <span className="font-bold text-lg">Export Data & End Session</span>
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (isRecording) {
+                      await stopRecording();
+                    }
+                    resetSession();
+                    setShowEndSessionModal(false);
+                  }}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:from-red-600 hover:to-rose-700 flex items-center justify-center space-x-3 transition-all shadow-lg"
+                >
+                  <Icon icon="lucide:x" className="w-5 h-5" />
+                  <span className="font-bold text-lg">Just End Session</span>
+                </button>
+
+                <button
+                  onClick={() => setShowEndSessionModal(false)}
+                  className="w-full px-6 py-4 bg-gray-200 text-gray-900 rounded-xl hover:bg-gray-300 transition-all border border-gray-300 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1344,32 +1445,36 @@ const StartPractice = () => {
 
       {/* Camera Off Confirmation Modal */}
       {showCameraOffModal && (
-        <div className="fixed inset-0 practice-glass-ultra flex items-center justify-center z-50">
-          <div className="glass-panel p-6 max-w-md w-full mx-4 text-white">
-            <div className="flex items-center mb-4">
-              <Icon icon="lucide:video-off" className="w-6 h-6 text-orange-400 mr-3" />
-              <h3 className="text-lg font-semibold">Turn Off Camera</h3>
-            </div>
-            
-            <p className="text-gray-200 mb-6">
-              You are currently recording. Turning off the camera will stop the recording and release camera access. Do you want to continue?
-            </p>
-            
-            <div className="flex flex-col space-y-3">
-              <button
-                onClick={() => handleCameraOffWithRecording(true)}
-                className="w-full px-4 py-2 glass-button bg-orange-500 bg-opacity-30 border-orange-400 text-white rounded-lg hover:bg-opacity-40 flex items-center justify-center space-x-2"
-              >
-                <Icon icon="lucide:video-off" className="w-4 h-4" />
-                <span>Stop Recording & Turn Off Camera</span>
-              </button>
-              
-              <button
-                onClick={() => setShowCameraOffModal(false)}
-                className="w-full px-4 py-2 glass-button bg-gray-500 bg-opacity-20 border-gray-400 text-white rounded-lg hover:bg-opacity-30"
-              >
-                Cancel
-              </button>
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 animate-fade-in">
+          <div className="relative max-w-lg w-full mx-6">
+            <div className="bg-white rounded-2xl p-8 shadow-2xl border-2 border-gray-200">
+              <div className="flex items-center mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-4 shadow-lg">
+                  <Icon icon="lucide:video-off" className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Turn Off Camera</h3>
+              </div>
+
+              <p className="text-gray-700 mb-8 leading-relaxed text-lg">
+                You are currently recording. Turning off the camera will stop the recording and release camera access. Do you want to continue?
+              </p>
+
+              <div className="flex flex-col space-y-3">
+                <button
+                  onClick={() => handleCameraOffWithRecording(true)}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:from-orange-600 hover:to-red-700 flex items-center justify-center space-x-3 transition-all shadow-lg"
+                >
+                  <Icon icon="lucide:video-off" className="w-5 h-5" />
+                  <span className="font-bold text-lg">Stop Recording & Turn Off Camera</span>
+                </button>
+
+                <button
+                  onClick={() => setShowCameraOffModal(false)}
+                  className="w-full px-6 py-4 bg-gray-200 text-gray-900 rounded-xl hover:bg-gray-300 transition-all border border-gray-300 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
