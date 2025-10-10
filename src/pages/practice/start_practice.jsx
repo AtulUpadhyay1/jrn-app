@@ -49,6 +49,27 @@ const StartPractice = () => {
 
   console.log('StartPractice component initialized with', practiceQuestions.length, 'questions');
 
+  // Check Safari speech recognition compatibility
+  const checkSpeechRecognitionSupport = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    console.log('Browser info:', {
+      isSafari,
+      hasSpeechRecognition: !!SpeechRecognition,
+      hasWebkitSpeechRecognition: !!window.webkitSpeechRecognition,
+      userAgent: navigator.userAgent,
+      protocol: location.protocol,
+      hostname: location.hostname
+    });
+
+    return {
+      supported: !!SpeechRecognition,
+      safari: isSafari,
+      needsHttps: isSafari && location.protocol !== 'https:' && location.hostname !== 'localhost'
+    };
+  };
+
   // States
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -194,12 +215,21 @@ const StartPractice = () => {
     // Detect Safari for specific handling
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     if (isSafari) {
-      console.log('Safari detected - using enhanced camera management');
-      // Removed toast to reduce notification spam
+      console.log('Safari detected - using enhanced camera and speech recognition management');
+      
+      // Safari requires HTTPS for speech recognition in production
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        console.warn('Safari requires HTTPS for speech recognition to work properly');
+        toast.warning('For speech recognition to work in Safari, please use HTTPS or localhost');
+      }
     }
 
     initializeCamera(true); // Show toast on initial load
-    initializeSpeechRecognition();
+    
+    // Small delay for Safari to ensure proper initialization
+    setTimeout(() => {
+      initializeSpeechRecognition();
+    }, isSafari ? 500 : 0);
 
     // Enhanced cleanup on page unload/reload
     const handleBeforeUnload = () => {
@@ -279,13 +309,60 @@ const StartPractice = () => {
 
   // Initialize speech recognition
   const initializeSpeechRecognition = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const supportInfo = checkSpeechRecognitionSupport();
+    
+    if (!supportInfo.supported) {
+      console.warn('Speech recognition not supported in this browser');
+      toast.error('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari 14.1+');
+      return;
+    }
+
+    if (supportInfo.needsHttps) {
+      console.warn('Safari requires HTTPS for speech recognition');
+      toast.warning('Safari requires HTTPS for speech recognition. Please use localhost or HTTPS.');
+      return;
+    }
+
+    try {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       speechRecognitionRef.current = new SpeechRecognition();
 
+      // Configuration for Safari/WebKit
       speechRecognitionRef.current.continuous = true;
       speechRecognitionRef.current.interimResults = true;
       speechRecognitionRef.current.lang = 'en-US';
+      speechRecognitionRef.current.maxAlternatives = 1;
+      
+      if (supportInfo.safari) {
+        // Safari-specific configuration
+        speechRecognitionRef.current.grammars = null;
+        
+        // Test Safari permissions first
+        const testPermissions = async () => {
+          try {
+            // Try a quick test to see if service is allowed
+            const testRecognition = new SpeechRecognition();
+            testRecognition.continuous = false;
+            testRecognition.interimResults = false;
+            testRecognition.maxAlternatives = 1;
+            
+            // Set a very short timeout
+            setTimeout(() => {
+              if (testRecognition) {
+                testRecognition.stop();
+              }
+            }, 100);
+            
+            console.log('Safari speech recognition test completed');
+          } catch (error) {
+            console.warn('Safari speech recognition test failed:', error);
+          }
+        };
+        
+        testPermissions();
+      }
+      
+      console.log('Speech recognition initialized successfully:', supportInfo);
 
       speechRecognitionRef.current.onresult = (event) => {
         let finalTranscript = '';
@@ -310,11 +387,14 @@ const StartPractice = () => {
       };
 
       speechRecognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
         setIsListening(true);
         setInterimTranscript('');
+        toast.success('Microphone is now listening...');
       };
 
       speechRecognitionRef.current.onend = () => {
+        console.log('Speech recognition ended');
         setIsListening(false);
         setInterimTranscript('');
       };
@@ -325,22 +405,39 @@ const StartPractice = () => {
         setInterimTranscript('');
 
         let errorMessage = 'Speech recognition failed. Please try again.';
+        let showDetailedHelp = false;
+        
         switch (event.error) {
           case 'network':
             errorMessage = 'Network error occurred. Please check your connection.';
             break;
           case 'not-allowed':
-            errorMessage = 'Microphone access denied. Please allow microphone permissions.';
+            errorMessage = 'Microphone access denied. Please allow microphone permissions in Safari Settings.';
+            showDetailedHelp = true;
             break;
           case 'no-speech':
             errorMessage = 'No speech detected. Please try speaking again.';
             break;
+          case 'audio-capture':
+            errorMessage = 'Audio capture failed. Please check your microphone.';
+            break;
+          case 'service-not-allowed':
+            errorMessage = 'Safari has blocked speech recognition. Check Settings → Safari → Privacy & Security';
+            showDetailedHelp = true;
+            break;
+          case 'aborted':
+            errorMessage = 'Speech recognition was interrupted. Please try again.';
+            break;
         }
-        toast.error(errorMessage);
+        
+        toast.error(errorMessage, { 
+          autoClose: showDetailedHelp ? 8000 : 5000 
+        });
       };
-    } else {
-      console.warn('Speech recognition not supported in this browser');
-      toast.warning('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
+
+    } catch (error) {
+      console.error('Error initializing speech recognition:', error);
+      toast.error('Failed to initialize speech recognition: ' + error.message);
     }
   };
 
@@ -661,19 +758,30 @@ const StartPractice = () => {
   // Start/Stop speech recognition
   const toggleSpeechRecognition = () => {
     if (!speechRecognitionRef.current) {
-      toast.error('Speech recognition not supported in this browser');
+      toast.error('Speech recognition not available. Please check browser compatibility.');
       return;
     }
 
     if (isListening) {
-      speechRecognitionRef.current.stop();
-      setIsListening(false);
-      setInterimTranscript('');
+      try {
+        speechRecognitionRef.current.stop();
+        console.log('Stopping speech recognition...');
+      } catch (error) {
+        console.error('Error stopping speech recognition:', error);
+        setIsListening(false);
+        setInterimTranscript('');
+      }
     } else {
-      // Don't clear current answer when starting recognition
-      setInterimTranscript('');
-      speechRecognitionRef.current.start();
-      setIsListening(true);
+      try {
+        // Don't clear current answer when starting recognition
+        setInterimTranscript('');
+        console.log('Starting speech recognition...');
+        speechRecognitionRef.current.start();
+      } catch (error) {
+        console.error('Error starting speech recognition:', error);
+        toast.error('Failed to start speech recognition: ' + error.message);
+        setIsListening(false);
+      }
     }
   };
 
@@ -1064,13 +1172,26 @@ const StartPractice = () => {
                     {/* Microphone / Speech Recognition */}
                     <button
                       onClick={toggleSpeechRecognition}
-                      className={`p-2.5 rounded-xl transition-all shadow-sm ${isListening
+                      disabled={!speechRecognitionRef.current}
+                      className={`p-2.5 rounded-xl transition-all shadow-sm ${
+                        !speechRecognitionRef.current 
+                          ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                          : isListening
                           ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
                         }`}
-                      title={isListening ? 'Stop listening' : 'Start speech recognition'}
+                      title={
+                        !speechRecognitionRef.current 
+                          ? 'Speech recognition not available'
+                          : isListening 
+                          ? 'Stop listening' 
+                          : 'Start speech recognition'
+                      }
                     >
-                      <Icon icon="lucide:mic" className="w-5 h-5" />
+                      <Icon 
+                        icon={!speechRecognitionRef.current ? "lucide:mic-off" : "lucide:mic"} 
+                        className="w-5 h-5" 
+                      />
                     </button>
 
                     {/* Pause/Resume (only when recording) */}
@@ -1325,7 +1446,11 @@ const StartPractice = () => {
                     <textarea
                       value={currentAnswer + interimTranscript}
                       onChange={(e) => setCurrentAnswer(e.target.value.replace(interimTranscript, ''))}
-                      placeholder="Type your answer here or use the microphone..."
+                      placeholder={
+                        speechRecognitionRef.current 
+                          ? "Type your answer here or use the microphone button..."
+                          : "Type your answer here (speech recognition not available)..."
+                      }
                       className="w-full bg-white text-gray-900 placeholder-gray-400 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm border-2 border-gray-300"
                       rows={4}
                     />
@@ -1466,6 +1591,7 @@ const StartPractice = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
