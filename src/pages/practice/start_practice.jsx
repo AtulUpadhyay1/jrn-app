@@ -980,30 +980,30 @@ const StartPractice = () => {
             {/* Video Card */}
             <div className="w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200" style={{ height: 'fit-content' }}>
               {/* Card Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 flex items-center justify-between">
+              <div className="bg-white px-6 py-3 flex items-center justify-between border-b border-gray-200">
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <Icon icon="lucide:video" className="w-5 h-5 text-white" />
+                  <div className="w-9 h-9 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center">
+                    <Icon icon="lucide:video" className="w-5 h-5 text-gray-700" />
                   </div>
                   <div>
-                    <h3 className="text-white font-bold text-base">Camera Feed</h3>
-                    <p className="text-blue-50 text-xs">Live Recording</p>
+                    <h3 className="text-gray-900 font-bold text-base">Camera Feed</h3>
+                    <p className="text-gray-600 text-xs">Live Recording</p>
                   </div>
                 </div>
 
                 {/* Timer and Emergency Controls */}
                 <div className="flex items-center space-x-2">
                   {sessionStartTime && hasStarted && (
-                    <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-                      <Icon icon="lucide:clock" className="w-3.5 h-3.5 text-white" />
-                      <span className="text-white font-mono text-sm font-bold">{formatTime(currentVideoTime)}</span>
-                      {isRecording && <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>}
+                    <div className="flex items-center space-x-2 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-lg">
+                      <Icon icon="lucide:clock" className="w-3.5 h-3.5 text-gray-700" />
+                      <span className="text-gray-900 font-mono text-sm font-bold">{formatTime(currentVideoTime)}</span>
+                      {isRecording && <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>}
                     </div>
                   )}
                   {hasStarted && (
                     <button
                       onClick={emergencyCameraShutdown}
-                      className="p-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white transition-all"
+                      className="p-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-gray-700 transition-all"
                       title="Emergency shutdown"
                     >
                       <Icon icon="lucide:power-off" className="w-4 h-4" />
@@ -1269,25 +1269,8 @@ const StartPractice = () => {
             ) : (
               /* Active Session - Question & Answer */
               <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-                {/* Current Question Banner */}
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 border-b-2 border-blue-700 flex-shrink-0">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                      <Icon icon="lucide:help-circle" className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-blue-50 font-semibold mb-1 uppercase">
-                        Current Question
-                      </p>
-                      <p className="text-white text-base font-medium leading-snug">
-                        {practiceQuestions[currentQuestionIndex]}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Chat History / Messages - Scrollable Area */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 min-h-0" style={{ maxHeight: '40vh' }}>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 min-h-0" style={{ maxHeight: '50vh' }}>
                   <div className="flex items-center space-x-2 mb-2 sticky top-0 bg-gray-50 py-2 z-10 border-b border-gray-200">
                     <Icon icon="lucide:message-square" className="w-4 h-4 text-gray-600" />
                     <h3 className="text-xs font-semibold text-gray-600 uppercase">Session History</h3>
