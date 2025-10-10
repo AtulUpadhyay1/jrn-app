@@ -195,10 +195,10 @@ const StartPractice = () => {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     if (isSafari) {
       console.log('Safari detected - using enhanced camera management');
-      toast.info('Safari detected: Enhanced camera privacy controls enabled');
+      // Removed toast to reduce notification spam
     }
 
-    initializeCamera();
+    initializeCamera(true); // Show toast on initial load
     initializeSpeechRecognition();
 
     // Enhanced cleanup on page unload/reload
@@ -236,7 +236,7 @@ const StartPractice = () => {
   }, [cleanup]);
 
   // Initialize camera stream
-  const initializeCamera = async () => {
+  const initializeCamera = async (showToast = true) => {
     try {
       // For Safari, be more explicit about constraints
       const constraints = {
@@ -265,11 +265,15 @@ const StartPractice = () => {
         };
 
         console.log('Camera initialized successfully');
-        toast.success('Camera ready!');
+        if (showToast) {
+          toast.success('Camera ready!');
+        }
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      toast.error('Failed to access camera. Please check permissions.');
+      if (showToast) {
+        toast.error('Failed to access camera. Please check permissions.');
+      }
     }
   };
 
@@ -466,7 +470,7 @@ const StartPractice = () => {
         // Immediately stop the test stream
         testStream.getTracks().forEach(track => track.stop());
         console.log('Camera verification: Successfully accessed and released camera');
-        toast.success('Camera completely released - hardware light should be off');
+        // Removed toast to reduce notification spam
 
       } catch (error) {
         console.log('Camera verification failed:', error.message);
@@ -478,7 +482,7 @@ const StartPractice = () => {
       }
     }, 2000);
 
-    toast.info('Camera shutdown initiated - checking hardware light...');
+    toast.info('Camera turned off');
   };
 
   // Handle camera off with recording confirmation
@@ -494,7 +498,7 @@ const StartPractice = () => {
         setIsRecording(false);
         setIsPaused(false);
       }
-      toast.info('Recording stopped for camera shutdown');
+      // Removed toast to reduce notification spam during camera shutdown
     }
 
     // Turn off camera with complete cleanup
@@ -805,7 +809,7 @@ const StartPractice = () => {
         }
       }, 1000);
 
-      toast.success('Emergency camera shutdown completed - check hardware light');
+      toast.success('Camera shutdown completed');
 
     } catch (error) {
       console.error('Emergency shutdown failed:', error);
@@ -939,8 +943,8 @@ const StartPractice = () => {
     // Reset camera state and reinitialize if needed
     if (!isCameraOn) {
       setIsCameraOn(true);
-      // Reinitialize camera
-      await initializeCamera();
+      // Reinitialize camera without showing toast to avoid duplicate messages
+      await initializeCamera(false);
     }
 
     toast.info('Session reset successfully!');
