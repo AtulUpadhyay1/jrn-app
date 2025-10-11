@@ -218,15 +218,25 @@ const PracticeInterview = () => {
     // You can add logic to save data to backend here
     
     // Show success message briefly
-    const toastId = toast.success('Session completed! Redirecting...', {
-      autoClose: 1200
+    const toastId = toast.success('Session completed! Closing...', {
+      autoClose: 1000
     });
     
-    // Navigate and dismiss toast
+    // Try to close tab or navigate back
     setTimeout(() => {
       toast.dismiss(toastId); // Dismiss this specific toast
-      navigate('/practice', { replace: true });
-    }, 1200);
+      
+      // Try to close the current tab/window
+      // This only works if the window was opened via JavaScript (window.open)
+      window.close();
+      
+      // If window.close() doesn't work (browser security prevents it),
+      // navigate back to practice page as fallback
+      setTimeout(() => {
+        // Check if window is still open (close didn't work)
+        navigate('/practice', { replace: true });
+      }, 100);
+    }, 1000);
   };
 
   const formatTime = (seconds) => {
