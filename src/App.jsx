@@ -24,7 +24,11 @@ import AdminProtectedRoute from "./components/AdminProtectedRoute";
 // JRN Pages
 const StartPractice = lazy(() => import("./pages/practice/start_practice"));
 const RoleplayPage = lazy(() => import("./pages/roleplay"));
+
+// Practice Page
 const PracticePage = lazy(() => import("./pages/practice"));
+const ShowPractice = lazy(() => import("./pages/practice/show"));
+
 const SocialPage = lazy(() => import("./pages/social"));
 const InboxPage = lazy(() => import("./pages/inbox"));  
 const Matchmaking = lazy(() => import("./pages/matchmaking"));
@@ -94,7 +98,8 @@ function App() {
           <Route path="practice" element={<PracticePage />} />
           <Route path="practice/start" element={<StartPractice />} />
           <Route path="practice/interview" element={<InterviewPlatform />} />
-          
+          <Route path="practice/show/:id" element={<ShowPractice />} />
+
           <Route path="social" element={<SocialPage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="matchmaking" element={<Matchmaking />} />

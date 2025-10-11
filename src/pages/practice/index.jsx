@@ -154,9 +154,7 @@ const Practice = () => {
                         <button
                           className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors duration-200 flex items-center"
                           onClick={() => {
-                            // Store selected useCase in localStorage and open start page
-                            localStorage.setItem('practiceUseCase', JSON.stringify(useCase));
-                            window.open('/practice/start', '_blank');
+                            window.open(`/practice/show/${useCase.id}`, '_blank');
                           }}
                         >
                           <Icon icon="heroicons-outline:play" className="w-4 h-4 mr-1" />
